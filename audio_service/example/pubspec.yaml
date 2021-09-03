@@ -10,9 +10,14 @@ dependencies:
     sdk: flutter
 
   path_provider: ^2.0.1
-  audio_session: ^0.1.5
-  just_audio: ^0.7.5
-  flutter_tts: ^3.0.0
+  #audio_session: ^0.1.5
+  #just_audio: ^0.7.5
+  #flutter_tts: ^3.0.0
+  video_player:
+    git:
+      url: https://github.com/surfstudio/plugins.git
+      ref: surf-video-player-2
+      path: packages/video_player/video_player
   rxdart: ^0.27.0
   audio_service:
     path: ../

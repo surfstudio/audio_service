@@ -20,23 +20,150 @@
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:audio_service_example/common.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:video_player/video_player.dart';
 
 // You might want to provide this using dependency injection rather than a
 // global variable.
-late AudioHandler _audioHandler;
+late VideoPlayerHandler _audioHandler;
+
+// abstract class VideoPlayerWrapperInterface {
+//   // TODO: implement currentIndex
+//   int? get currentIndex => throw UnimplementedError();
+//
+//   // TODO: implement currentIndexStream
+//   Stream<int?> get currentIndexStream => throw UnimplementedError();
+//
+//   Future<void> dispose() {
+//     // TODO: implement dispose
+//     throw UnimplementedError();
+//   }
+//
+//   // TODO: implement hasNext
+//   bool get hasNext => throw UnimplementedError();
+//
+//   // TODO: implement hasPrevious
+//   bool get hasPrevious => throw UnimplementedError();
+//
+//   Future<Duration?> load() {
+//     // TODO: implement load
+//     throw UnimplementedError();
+//   }
+//
+//   // TODO: implement nextIndex
+//   int? get nextIndex => throw UnimplementedError();
+//
+//   Future<void> pause() {
+//     // TODO: implement pause
+//     throw UnimplementedError();
+//   }
+//
+//   Future<void> play() {
+//     // TODO: implement play
+//     throw UnimplementedError();
+//   }
+//
+//   // TODO: implement playing
+//   bool get playing => throw UnimplementedError();
+//
+//   // TODO: implement playingStream
+//   Stream<bool> get playingStream => throw UnimplementedError();
+//
+//   // TODO: implement position
+//   Duration get position => throw UnimplementedError();
+//
+//   // TODO: implement positionStream
+//   Stream<Duration> get positionStream => throw UnimplementedError();
+//
+//   // TODO: implement previousIndex
+//   int? get previousIndex => throw UnimplementedError();
+//
+//   // TODO: implement processingState
+//   ProcessingState get processingState => throw UnimplementedError();
+//
+//   // TODO: implement processingStateStream
+//   Stream<ProcessingState> get processingStateStream =>
+//       throw UnimplementedError();
+//
+//   // TODO: возможно нужно добавить и индекс айтема
+//   Future<void> seek(Duration position) {
+//     // TODO: implement seek
+//     throw UnimplementedError();
+//   }
+//
+//   Future<void> seekToHead() => seek(Duration.zero);
+//
+//   Future<void> seekToNext() {
+//     // TODO: implement seekToNext
+//     throw UnimplementedError();
+//   }
+//
+//   Future<void> seekToPrevious() {
+//     // TODO: implement seekToPrevious
+//     throw UnimplementedError();
+//   }
+//
+//   // TODO: implement sequence
+//   List<IndexedAudioSource>? get sequence => throw UnimplementedError();
+//
+//   // TODO: implement sequenceState
+//   SequenceState? get sequenceState => throw UnimplementedError();
+//
+//   // TODO: implement sequenceStateStream
+//   Stream<SequenceState?> get sequenceStateStream => throw UnimplementedError();
+//
+//   // TODO: implement sequenceStream
+//   Stream<List<IndexedAudioSource>?> get sequenceStream =>
+//       throw UnimplementedError();
+//
+//   Future<void> setAndroidAudioAttributes(
+//       AndroidAudioAttributes audioAttributes) {
+//     // TODO: implement setAndroidAudioAttributes
+//     throw UnimplementedError();
+//   }
+//
+//   // возможно нужен
+//   //
+//   // Future<Duration?> setAudioSource(AudioSource source,
+//   //     {bool preload = true, int initialIndex, Duration initialPosition}) {
+//   //   // TODO: implement setAudioSource
+//   //   throw UnimplementedError();
+//   // }
+//
+//   // чота на айосовском, потом разберемся
+//   //
+//   // Future<void> setAutomaticallyWaitsToMinimizeStalling(
+//   //     bool automaticallyWaitsToMinimizeStalling) {
+//   //   // TODO: implement setAutomaticallyWaitsToMinimizeStalling
+//   //   throw UnimplementedError();
+//   // }
+//
+//   Future<void> setSpeed(double speed) {
+//     // TODO: implement setSpeed
+//     throw UnimplementedError();
+//   }
+//
+//   // TODO: implement speed
+//   double get speed => throw UnimplementedError();
+//
+//   // TODO: implement speedStream
+//   Stream<double> get speedStream => throw UnimplementedError();
+//
+//   Future<void> stop() {
+//     // TODO: implement stop
+//     throw UnimplementedError();
+//   }
+// }
 
 Future<void> main() async {
   _audioHandler = await AudioService.init(
-    builder: () => AudioPlayerHandler(),
+    builder: () => VideoPlayerHandler(),
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.ryanheise.myapp.channel.audio',
       androidNotificationChannelName: 'Audio playback',
-      androidNotificationOngoing: true,
+      androidStopForegroundOnPause: true,
     ),
   );
   runApp(MyApp());
@@ -61,66 +188,7 @@ class MainScreen extends StatelessWidget {
         title: const Text('Audio Service Demo'),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Show media item title
-            StreamBuilder<MediaItem?>(
-              stream: _audioHandler.mediaItem,
-              builder: (context, snapshot) {
-                final mediaItem = snapshot.data;
-                return Text(mediaItem?.title ?? '');
-              },
-            ),
-            // Play/pause/stop buttons.
-            StreamBuilder<bool>(
-              stream: _audioHandler.playbackState
-                  .map((state) => state.playing)
-                  .distinct(),
-              builder: (context, snapshot) {
-                final playing = snapshot.data ?? false;
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _button(Icons.fast_rewind, _audioHandler.rewind),
-                    if (playing)
-                      _button(Icons.pause, _audioHandler.pause)
-                    else
-                      _button(Icons.play_arrow, _audioHandler.play),
-                    _button(Icons.stop, _audioHandler.stop),
-                    _button(Icons.fast_forward, _audioHandler.fastForward),
-                  ],
-                );
-              },
-            ),
-            // A seek bar.
-            StreamBuilder<MediaState>(
-              stream: _mediaStateStream,
-              builder: (context, snapshot) {
-                final mediaState = snapshot.data;
-                return SeekBar(
-                  duration: mediaState?.mediaItem?.duration ?? Duration.zero,
-                  position: mediaState?.position ?? Duration.zero,
-                  onChangeEnd: (newPosition) {
-                    _audioHandler.seek(newPosition);
-                  },
-                );
-              },
-            ),
-            // Display the processing state.
-            StreamBuilder<AudioProcessingState>(
-              stream: _audioHandler.playbackState
-                  .map((state) => state.processingState)
-                  .distinct(),
-              builder: (context, snapshot) {
-                final processingState =
-                    snapshot.data ?? AudioProcessingState.idle;
-                return Text(
-                    "Processing state: ${describeEnum(processingState)}");
-              },
-            ),
-          ],
-        ),
+        child: _BumbleBeeRemoteVideo(),
       ),
     );
   }
@@ -148,30 +216,40 @@ class MediaState {
 }
 
 /// An [AudioHandler] for playing a single item.
-class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
-  static final _item = MediaItem(
-    id: 'https://s3.amazonaws.com/scifri-episodes/scifri20181123-episode.mp3',
-    album: "Science Friday",
-    title: "A Salute To Head-Scratching Science",
-    artist: "Science Friday and WNYC Studios",
-    duration: const Duration(milliseconds: 5739820),
-    artUri: Uri.parse(
-        'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
-  );
+class VideoPlayerHandler extends BaseAudioHandler {
+  static final _items = [
+    MediaItem(
+      id: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+      album: "Science Friday",
+      title: "A Salute To Head-Scratching Science",
+      artist: "Science Friday and WNYC Studios",
+      duration: const Duration(milliseconds: 5739820),
+      artUri: Uri.parse(
+          'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
+    ),
+    MediaItem(
+      id: 'https://s3.amazonaws.com/scifri-segments/scifri201711241.mp3',
+      album: "Science Friday",
+      title: "From Cat Rheology To Operatic Incompetence",
+      artist: "Science Friday and WNYC Studios",
+      duration: const Duration(milliseconds: 2856950),
+      artUri: Uri.parse(
+          'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
+    ),
+  ];
 
-  final _player = AudioPlayer();
+  VideoPlayerController? _controller;
+  int _currentItemIndex = 0;
+  final BehaviorSubject<VideoPlayerController?> _controllerSubject =
+      BehaviorSubject.seeded(null);
 
-  /// Initialise our audio handler.
-  AudioPlayerHandler() {
-    // So that our clients (the Flutter UI and the system notification) know
-    // what state to display, here we set up our audio handler to broadcast all
-    // playback state changes as they happen via playbackState...
-    _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
-    // ... and also the current media item via mediaItem.
-    mediaItem.add(_item);
+  Stream<VideoPlayerController?> get controllerStream =>
+      _controllerSubject.stream;
 
-    // Load the player.
-    _player.setAudioSource(AudioSource.uri(Uri.parse(_item.id)));
+  /// Initialise our video handler.
+  VideoPlayerHandler() {
+    mediaItem.add(_items[_currentItemIndex]);
+    _reinitController();
   }
 
   // In this simple example, we handle only 4 actions: play, pause, seek and
@@ -180,48 +258,149 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   // your audio playback logic in one place.
 
   @override
-  Future<void> play() => _player.play();
+  Future<void> play() => _controller!.play();
 
   @override
-  Future<void> pause() => _player.pause();
+  Future<void> pause() => _controller!.pause();
 
   @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> seek(Duration position) => _controller!.seekTo(position);
 
   @override
-  Future<void> stop() => _player.stop();
+  Future<void> skipToNext() async {
+    if (_currentItemIndex == _items.length) return;
+    _currentItemIndex = _currentItemIndex + 1;
+    mediaItem.add(_items[_currentItemIndex]);
+    _reinitController();
+  }
 
-  /// Transform a just_audio event into an audio_service state.
-  ///
-  /// This method is used from the constructor. Every event received from the
-  /// just_audio player will be transformed into an audio_service state so that
-  /// it can be broadcast to audio_service clients.
-  PlaybackState _transformEvent(PlaybackEvent event) {
-    return PlaybackState(
+  @override
+  Future<void> skipToPrevious() async {
+    // TODO: add seekToHead
+    if (_currentItemIndex == 0) return;
+
+    _currentItemIndex = _currentItemIndex - 1;
+    mediaItem.add(_items[_currentItemIndex]);
+    _reinitController();
+  }
+
+  @override
+  Future<void> stop() async {
+    _controller?.removeListener(_broadcastState);
+    await _controller?.dispose();
+    _controller = null;
+    _broadcastState();
+  }
+
+  void _reinitController() {
+    if (_controller != null) stop();
+    _controller = VideoPlayerController.network(
+      _items[_currentItemIndex].id,
+      videoPlayerOptions: const VideoPlayerOptions(
+        mixWithOthers: true,
+        observeAppLifecycle: false,
+      ),
+    );
+
+    _controllerSubject.add(_controller);
+    _controller?.setLooping(true);
+    _controller?.initialize();
+    _controller?.addListener(_broadcastState);
+  }
+
+  /// Broadcasts the current state to all clients.
+  Future<void> _broadcastState() async {
+    final videoControllerValue = _controller?.value;
+
+    final AudioProcessingState processingState;
+    if (videoControllerValue == null) {
+      processingState = AudioProcessingState.idle;
+    } else if (videoControllerValue.isBuffering) {
+      processingState = AudioProcessingState.buffering;
+    } else if (!videoControllerValue.isInitialized) {
+      processingState = AudioProcessingState.loading;
+    } else if (videoControllerValue.isInitialized) {
+      processingState = AudioProcessingState.ready;
+    } else if (videoControllerValue.position == videoControllerValue.duration) {
+      processingState = AudioProcessingState.completed;
+    } else {
+      if (!videoControllerValue.hasError) {
+        throw Exception('Unknown processing state');
+      }
+      processingState = AudioProcessingState.error;
+    }
+    final newState = PlaybackState(
       controls: [
-        MediaControl.rewind,
-        if (_player.playing) MediaControl.pause else MediaControl.play,
+        MediaControl.skipToPrevious,
+        if (videoControllerValue?.isPlaying ?? false)
+          MediaControl.pause
+        else
+          MediaControl.play,
+        MediaControl.skipToNext,
         MediaControl.stop,
-        MediaControl.fastForward,
       ],
-      systemActions: const {
-        MediaAction.seek,
-        MediaAction.seekForward,
-        MediaAction.seekBackward,
-      },
-      androidCompactActionIndices: const [0, 1, 3],
-      processingState: const {
-        ProcessingState.idle: AudioProcessingState.idle,
-        ProcessingState.loading: AudioProcessingState.loading,
-        ProcessingState.buffering: AudioProcessingState.buffering,
-        ProcessingState.ready: AudioProcessingState.ready,
-        ProcessingState.completed: AudioProcessingState.completed,
-      }[_player.processingState]!,
-      playing: _player.playing,
-      updatePosition: _player.position,
-      bufferedPosition: _player.bufferedPosition,
-      speed: _player.speed,
-      queueIndex: event.currentIndex,
+      bufferedPosition: Duration.zero,
+      updatePosition: videoControllerValue?.position ?? Duration.zero,
+      playing: videoControllerValue?.isPlaying ?? false,
+      processingState: processingState,
+    );
+    //TODO: возможно надо добавить проверку на равенство
+    playbackState.add(newState);
+  }
+}
+
+class _BumbleBeeRemoteVideo extends StatefulWidget {
+  @override
+  _BumbleBeeRemoteVideoState createState() => _BumbleBeeRemoteVideoState();
+}
+
+class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        const Text('With remote mp4'),
+        StreamBuilder<VideoPlayerController?>(
+          stream: _audioHandler.controllerStream,
+          builder: (context, snapshot) {
+            final controller = snapshot.data;
+            if (controller == null) return const Text('With remote mp4');
+            return AspectRatio(
+              aspectRatio: controller.value.aspectRatio,
+              child: VideoPlayer(controller),
+            );
+          },
+        ),
+        SizedBox(
+          height: 100.0,
+          child: StreamBuilder<bool>(
+            stream: _audioHandler.playbackState
+                .map((state) => state.playing)
+                .distinct(),
+            builder: (context, snapshot) {
+              final playing = snapshot.data ?? false;
+
+              return GestureDetector(
+                onTap: (playing) ? _audioHandler.pause : _audioHandler.play,
+                child: AnimatedSwitcher(
+                  duration: Duration(milliseconds: 50),
+                  reverseDuration: Duration(milliseconds: 200),
+                  child: Container(
+                    color: Colors.black26,
+                    child: Center(
+                      child: Icon(
+                        playing ? Icons.pause : Icons.play_arrow,
+                        color: Colors.white,
+                        size: 100.0,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
