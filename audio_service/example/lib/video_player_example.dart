@@ -4,7 +4,8 @@
 // //
 // //  https://github.com/ryanheise/audio_service
 // //
-// // This example implements a minimal audio handler that renders the current
+// // This example implements a minimal audio handler which use video player and
+// // renders the current
 // // media item and playback state to the system notification and responds to 4
 // // media actions:
 // //
@@ -15,7 +16,7 @@
 // //
 // // To run this example, use:
 // //
-// // flutter run
+// // flutter run -t lib/video_player_example.dart
 //
 // import 'dart:async';
 //
@@ -27,8 +28,6 @@
 // // You might want to provide this using dependency injection rather than a
 // // global variable.
 // late VideoPlayerHandler _audioHandler;
-// // NOTE:
-// // To run this example you need to
 //
 // Future<void> main() async {
 //   _audioHandler = await AudioService.init(
