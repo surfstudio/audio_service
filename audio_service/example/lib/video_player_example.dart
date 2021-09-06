@@ -81,7 +81,7 @@
 //       album: "Science Friday",
 //       title: "A Salute To Head-Scratching Science",
 //       artist: "Science Friday and WNYC Studios",
-//       duration: const Duration(milliseconds: 5739820),
+//       duration: const Duration(milliseconds: 4000),
 //       artUri: Uri.parse(
 //           'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
 //     ),
