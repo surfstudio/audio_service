@@ -74,29 +74,57 @@
 // }
 //
 // /// An [AudioHandler] for playing a single item.
-// class VideoPlayerHandler extends BaseAudioHandler {
+// class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
 //   static final _items = [
 //     MediaItem(
 //       id: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
-//       album: "Science Friday",
-//       title: "A Salute To Head-Scratching Science",
-//       artist: "Science Friday and WNYC Studios",
+//       album: "Bee",
+//       title: "Bee",
+//       artist: "Bee",
 //       duration: const Duration(milliseconds: 4000),
 //       artUri: Uri.parse(
 //           'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
 //     ),
+//     MediaItem(
+//       id: 'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
+//       album: "Butterfly",
+//       title: "Butterfly",
+//       artist: "Butterfly",
+//       duration: const Duration(milliseconds: 7000),
+//       artUri: Uri.parse(
+//           'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
+//     ),
+//     MediaItem(
+//       id: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+//       album: "Bee",
+//       title: "Bee",
+//       artist: "Bee",
+//       duration: const Duration(milliseconds: 4000),
+//       artUri: Uri.parse(
+//           'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
+//     ),
+//     MediaItem(
+//       id: 'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
+//       album: "Butterfly",
+//       title: "Butterfly",
+//       artist: "Butterfly",
+//       duration: const Duration(milliseconds: 7000),
+//       artUri: Uri.parse(
+//           'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
+//     ),
 //   ];
+//   int _currentMediaItemIndex = 0;
 //
+//   bool _isStopped = false;
 //   VideoPlayerController? _controller;
 //   final BehaviorSubject<VideoPlayerController?> _controllerSubject =
-//   BehaviorSubject.seeded(null);
+//       BehaviorSubject.seeded(null);
 //
 //   Stream<VideoPlayerController?> get controllerStream =>
 //       _controllerSubject.stream;
 //
 //   /// Initialise our video handler.
 //   VideoPlayerHandler() {
-//     mediaItem.add(_items[0]);
 //     _reinitController();
 //   }
 //
@@ -116,16 +144,32 @@
 //
 //   @override
 //   Future<void> stop() async {
-//     _controller?.removeListener(_broadcastState);
-//     await _controller?.dispose();
-//     _controller = null;
-//     _broadcastState();
+//     _isStopped = true;
+//     _controller?.pause();
+//     await super.stop();
 //   }
 //
-//   void _reinitController() {
-//     if (_controller != null) stop();
+//   @override
+//   Future<void> skipToNext() async {
+//     if (_currentMediaItemIndex == _items.length - 1) return;
+//     _currentMediaItemIndex++;
+//     await _reinitController();
+//   }
+//
+//   @override
+//   Future<void> skipToPrevious() async {
+//     if (_currentMediaItemIndex == 0) return;
+//     _currentMediaItemIndex--;
+//     await _reinitController();
+//   }
+//
+//   Future<void> _reinitController() async {
+//     final previousController = _controller;
+//     previousController?.removeListener(_broadcastState);
+//     previousController?.pause();
+//     mediaItem.add(_items[_currentMediaItemIndex]);
 //     _controller = VideoPlayerController.network(
-//       _items[0].id,
+//       _items[_currentMediaItemIndex].id,
 //       videoPlayerOptions: const VideoPlayerOptions(
 //         mixWithOthers: true,
 //         observeAppLifecycle: false,
@@ -136,12 +180,22 @@
 //     _controller?.setLooping(true);
 //     _controller?.initialize();
 //     _controller?.addListener(_broadcastState);
+//     _controller?.play();
+//     playbackState.add(playbackState.value.copyWith(
+//       updatePosition: Duration.zero,
+//     ));
+//     Future<void>.delayed(
+//       const Duration(milliseconds: 100),
+//       () => previousController?.dispose(),
+//     );
 //   }
 //
 //   /// Broadcasts the current state to all clients.
 //   Future<void> _broadcastState() async {
 //     final videoControllerValue = _controller?.value;
 //
+//     if (videoControllerValue?.isPlaying ?? false) _isStopped = false;
+//     if (_isStopped) return;
 //     final AudioProcessingState processingState;
 //     if (videoControllerValue == null) {
 //       processingState = AudioProcessingState.idle;
@@ -174,7 +228,6 @@
 //       playing: videoControllerValue?.isPlaying ?? false,
 //       processingState: processingState,
 //     );
-//
 //     playbackState.add(newState);
 //   }
 // }
