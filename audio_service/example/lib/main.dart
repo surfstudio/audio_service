@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_service_example/custom_audio_handler.dart';
+import 'package:audio_service_example/pip/pip_interactor.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -11,8 +12,11 @@ import 'package:video_player/video_player.dart';
 // You might want to provide this using dependency injection rather than a
 // global variable.
 late VideoPlayerHandler _audioHandler;
+late PipInteractor _pipInteractor;
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   _audioHandler = await AudioService.init(
     builder: () => VideoPlayerHandler(),
     config: const AudioServiceConfig(
@@ -25,6 +29,8 @@ Future<void> main() async {
   AudioSession.instance.then((session) {
     session.configure(const AudioSessionConfiguration.music());
   });
+
+  _pipInteractor = PipInteractor();
 
   runApp(MyApp());
 }
@@ -119,6 +125,21 @@ class BumbleBeeRemoteVideo extends StatelessWidget {
             _audioHandler.addEmptyState();
           },
           child: const Text('add empty state to player'),
+        ),
+        TextButton(
+          onPressed: () {
+            _pipInteractor.setAutoPipModeEnable(
+              isEnabled: true,
+              textureId: _audioHandler.controllerStream.value!.textureId,
+            );
+          },
+          child: const Text('setAutoPipModeEnable(true)'),
+        ),
+        TextButton(
+          onPressed: () {
+            _pipInteractor.setAutoPipModeEnable(isEnabled: false);
+          },
+          child: const Text('setAutoPipModeEnable(false)'),
         ),
       ],
     );
