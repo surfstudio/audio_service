@@ -62,7 +62,7 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
       _item.id,
       videoPlayerOptions: const VideoPlayerOptions(
         mixWithOthers: true,
-        observeAppLifecycle: true,
+        observeAppLifecycle: false,
       ),
     );
 
