@@ -24,7 +24,18 @@ let textureIdArg = "textureId"
 let isAutoPipEnabledArg = "isAutoPipEnabled"
 let isPipModeActiveArg = "isPipModeActiveArgument"
 
-public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin, AVPictureInPictureControllerDelegate, UIApplicationDelegate {
+public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
+    AVPictureInPictureControllerDelegate, UIApplicationDelegate {
+
+    // MARK: - Nested types
+
+    private enum ScreenLockState {
+        case locked
+        case unlocked
+    }
+
+    // MARK: - Internal properties
+
     let channel: FlutterMethodChannel
     static var isAutoPip = false
     
@@ -32,10 +43,21 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin, AVPictureInPictureC
     static var newPlayer: AVPlayer?
     static var playerLayer: AVPlayerLayer?
     static var pictureInPictureController: AVPictureInPictureController?
+
+    // MARK: - Private properties
+
+    private static let interruptionNotificationService = InterruptionNotificationService()
+    private var screenLockState: ScreenLockState = .unlocked
+
+    // MARK: - Public initialization
     
     public init(_ newChannel: FlutterMethodChannel) {
         channel = newChannel
+        super.init()
+        SwiftFlutterPipPlugin.interruptionNotificationService.delegate = self
     }
+
+    // MARK: - Public methods
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: channelName, binaryMessenger: registrar.messenger())
@@ -98,6 +120,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin, AVPictureInPictureC
         channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: false])
         SwiftFlutterPipPlugin.playerLayer?.player?.pause()
         NotificationCenter.default.removeObserver(self)
+        SwiftFlutterPipPlugin.interruptionNotificationService.unsubscribeFromAllNotifications()
         SwiftFlutterPipPlugin.pictureInPictureController = nil
         SwiftFlutterPipPlugin.playerLayer?.removeFromSuperlayer()
         SwiftFlutterPipPlugin.newPlayer = nil
@@ -136,6 +159,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin, AVPictureInPictureC
         let appDelegate = (UIApplication.shared.delegate as! FlutterAppDelegate)
         SwiftFlutterPipPlugin.isAutoPip = isAutoPipEnable
         if(isAutoPipEnable) {
+            SwiftFlutterPipPlugin.interruptionNotificationService.subscribeOnAllnotifications()
             let playerPluginOpt = (UIApplication.shared.delegate as! FlutterAppDelegate).valuePublished(byPlugin: "FLTVideoPlayerPlugin") as? FLTVideoPlayerPlugin
             if let textureID = textureIDOpt, let fltPlayer = playerPluginOpt?.players[textureID] as? FLTVideoPlayer, let player = fltPlayer.player {
                 if AVPictureInPictureController.isPictureInPictureSupported() {
@@ -163,6 +187,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin, AVPictureInPictureC
                 }
             }
         } else {
+            SwiftFlutterPipPlugin.interruptionNotificationService.unsubscribeFromAllNotifications()
             NotificationCenter.default.removeObserver(self)
             SwiftFlutterPipPlugin.playerLayer?.removeFromSuperlayer()
             SwiftFlutterPipPlugin.pictureInPictureController = nil
@@ -200,6 +225,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin, AVPictureInPictureC
         SwiftFlutterPipPlugin.fltPlayer?.isPipActive = false
         SwiftFlutterPipPlugin.fltPlayer?.pause()
         NotificationCenter.default.removeObserver(self)
+        SwiftFlutterPipPlugin.interruptionNotificationService.unsubscribeFromAllNotifications()
         SwiftFlutterPipPlugin.playerLayer?.removeFromSuperlayer()
         SwiftFlutterPipPlugin.pictureInPictureController = nil
         SwiftFlutterPipPlugin.playerLayer = nil
@@ -207,3 +233,29 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin, AVPictureInPictureC
     }
 }
 
+// MARK: - PauseDetectServiceDelegate
+
+extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
+
+    func interruptionEventDidTriggered(_ reason: InterruptionReasons) {
+        switch reason {
+        case .rateDidChange:
+            /// - TODO: - Need check on available content if this ended and not repeatable
+            switch screenLockState {
+            case .locked:
+                DispatchQueue.main.async {
+                    SwiftFlutterPipPlugin.playerLayer?.player?.play()
+                }
+            case .unlocked:
+                break
+            }
+        case .screenDidLocked:
+            screenLockState = .locked
+        case .screenDidUnlocked:
+            screenLockState = .unlocked
+        case .system:
+            debugPrint(#function)
+        }
+    }
+
+}
