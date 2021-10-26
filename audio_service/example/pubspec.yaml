@@ -6,25 +6,19 @@ environment:
   sdk: '>=2.12.0 <3.0.0'
 
 dependencies:
+  audio_service:
+    path: ../
+  audio_session: ^0.1.6
+  cupertino_icons: ^1.0.2
   flutter:
     sdk: flutter
-
-
-  audio_session: ^0.1.6
-  # video player has conflict with packages above so
-  # comment them and related code and uncomment this to use video_player_example
-  # TODO use normal video player dependency when pull request is accepted(will add link soon)
+  path_provider: ^2.0.1
+  rxdart: ^0.27.0
   video_player:
     git:
       url: https://github.com/surfstudio/plugins.git
       ref: surf-video-player-2
       path: packages/video_player/video_player
-  rxdart: ^0.27.0
-  path_provider: ^2.0.1
-  audio_service:
-    path: ../
-
-  cupertino_icons: ^1.0.2
 
 dev_dependencies:
   flutter_test:

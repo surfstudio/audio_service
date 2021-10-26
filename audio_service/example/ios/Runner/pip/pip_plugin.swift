@@ -147,10 +147,6 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin, AVPictureInPictureC
                     SwiftFlutterPipPlugin.newPlayer? = player
                     SwiftFlutterPipPlugin.newPlayer?.actionAtItemEnd = .pause
                     
-                    if #available(iOS 15.0, *) {
-                        SwiftFlutterPipPlugin.newPlayer?.audiovisualBackgroundPlaybackPolicy = .continuesIfPossible
-                    }
-                    
                     SwiftFlutterPipPlugin.playerLayer = AVPlayerLayer(player: player)
                     SwiftFlutterPipPlugin.playerLayer?.contentsGravity = "top"
                     SwiftFlutterPipPlugin.playerLayer?.bounds = UIScreen.main.bounds
@@ -158,12 +154,8 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin, AVPictureInPictureC
                     appDelegate.window.rootViewController?.view.layer.insertSublayer(SwiftFlutterPipPlugin.playerLayer!, at: 0)
                     appDelegate.window.rootViewController?.view.layer.sublayers?.first?.opacity = 0
                     
-                    
                     SwiftFlutterPipPlugin.pictureInPictureController = AVPictureInPictureController(playerLayer: SwiftFlutterPipPlugin.playerLayer!)
                     SwiftFlutterPipPlugin.pictureInPictureController?.delegate = self
-                    
-
-//                    SwiftFlutterPipPlugin.newPlayer?.addObserver(self,selector:#selector(playPressed),name:AVPlayer.rateDidChangeNotification,object:nil)
                     
                     if #available(iOS 11.0, *) {
                         NotificationCenter.default.addObserver(self, selector: #selector(didChangeScreenRecordingStatus), name: NSNotification.Name.UIScreenCapturedDidChange, object: nil)
@@ -200,11 +192,6 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin, AVPictureInPictureC
             SwiftFlutterPipPlugin.pictureInPictureController?.stopPictureInPicture()
         }
     }
-    
-//    @objc
-//    private func playPressed() {
-//        channel.invokeMethod(playPressed, arguments: [])
-//    }
     
     @objc
     private func didChangeScreenRecordingStatus() {
