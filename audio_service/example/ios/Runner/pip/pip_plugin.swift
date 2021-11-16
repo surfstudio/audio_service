@@ -48,6 +48,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
 
     private static let interruptionNotificationService = InterruptionNotificationService()
     private var screenLockState: ScreenLockState = .unlocked
+    private static let playerCenter: PlayerCenterProtocol = PlayerCenter()
 
     // MARK: - Public initialization
     
@@ -78,11 +79,19 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     public func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         SwiftFlutterPipPlugin.fltPlayer?.isPipActive = false
         channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: false])
+        SwiftFlutterPipPlugin.playerCenter.discardIsEnabledControllsState()
     }
     
     public func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         SwiftFlutterPipPlugin.fltPlayer?.isPipActive = true
         channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: true])
+        SwiftFlutterPipPlugin.playerCenter.setupControlOnMediaCenter(isEnable: true)
+        SwiftFlutterPipPlugin.playerCenter.onTogglePlayPause = { [weak self] in
+            let player = SwiftFlutterPipPlugin.playerLayer?.player
+            (self?.isPaused() ?? true) ? player?.play() : player?.pause()
+        }
+        SwiftFlutterPipPlugin.playerCenter.onPlay = SwiftFlutterPipPlugin.playerLayer?.player?.play
+        SwiftFlutterPipPlugin.playerCenter.onPause = SwiftFlutterPipPlugin.playerLayer?.player?.pause
     }
     
     public func picture(_ pictureInPictureController: AVPictureInPictureController, restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void) {
@@ -217,6 +226,8 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
             SwiftFlutterPipPlugin.pictureInPictureController?.stopPictureInPicture()
         }
     }
+
+    // MARK: - Private methods
     
     @objc
     private func didChangeScreenRecordingStatus() {
@@ -231,6 +242,19 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         SwiftFlutterPipPlugin.playerLayer = nil
         SwiftFlutterPipPlugin.newPlayer = nil
     }
+
+    private func isPaused() -> Bool {
+        let player = SwiftFlutterPipPlugin.playerLayer?.player
+        if #available(iOS 10.0, *), player?.timeControlStatus == .paused {
+            return true
+        }
+
+        if player?.rate == .zero, player?.status == .readyToPlay {
+            return true
+        }
+        return false
+    }
+
 }
 
 // MARK: - PauseDetectServiceDelegate
