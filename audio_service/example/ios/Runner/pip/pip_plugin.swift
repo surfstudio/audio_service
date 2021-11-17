@@ -29,6 +29,11 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
 
     // MARK: - Nested types
 
+    private enum Constants {
+        /// - Need for use legacy rate change notification, this trigger after lockscreen event
+        static let delayBetweenScreenlockAndRateChange: TimeInterval = 0.2
+    }
+
     private enum ScreenLockState {
         case locked
         case unlocked
@@ -80,6 +85,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         SwiftFlutterPipPlugin.fltPlayer?.isPipActive = false
         channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: false])
         SwiftFlutterPipPlugin.playerCenter.discardIsEnabledControllsState()
+        SwiftFlutterPipPlugin.interruptionNotificationService.unsubscribeOnLegacyRateNotification()
     }
     
     public func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
@@ -92,6 +98,9 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         }
         SwiftFlutterPipPlugin.playerCenter.onPlay = SwiftFlutterPipPlugin.playerLayer?.player?.play
         SwiftFlutterPipPlugin.playerCenter.onPause = SwiftFlutterPipPlugin.playerLayer?.player?.pause
+        SwiftFlutterPipPlugin
+            .interruptionNotificationService
+            .subscribeOnLegacyRateNotification(player: SwiftFlutterPipPlugin.playerLayer?.player)
     }
     
     public func picture(_ pictureInPictureController: AVPictureInPictureController, restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void) {
@@ -265,20 +274,30 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
         switch reason {
         case .rateDidChange:
             /// - TODO: - Need check on available content if this ended and not repeatable
-            switch screenLockState {
-            case .locked:
-                DispatchQueue.main.async {
-                    SwiftFlutterPipPlugin.playerLayer?.player?.play()
-                }
-            case .unlocked:
-                break
-            }
+            resumePauseIfScreenLocked()
         case .screenDidLocked:
             screenLockState = .locked
         case .screenDidUnlocked:
             screenLockState = .unlocked
         case .system:
-            debugPrint(#function)
+            break
+        }
+    }
+
+    private func resumePauseIfScreenLocked() {
+        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate == .zero else {
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + Constants.delayBetweenScreenlockAndRateChange) { [weak self] in
+            guard let self = self else {
+                return
+            }
+            switch self.screenLockState {
+            case .locked:
+                SwiftFlutterPipPlugin.playerLayer?.player?.play()
+            case .unlocked:
+                break
+            }
         }
     }
 

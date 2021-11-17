@@ -10,9 +10,13 @@ import class UIKit.UIApplication
 import AVKit
 import Foundation
 
-final class InterruptionNotificationService {
+final class InterruptionNotificationService: NSObject {
 
     // MARK: - Nested types
+
+    private enum Constants {
+        static let rateKey = "rate"
+    }
 
     enum SubscriptionType {
         case rateDidChange
@@ -29,10 +33,20 @@ final class InterruptionNotificationService {
 
     private let eventCenter = NotificationCenter.default
     private var lastPauseReasonState: InterruptionReasons = .rateDidChange
+    private var player: AVPlayer?
+    private var isUseLegacyMethodRateDetection: Bool {
+        switch DeviceModel.detect() {
+        case .iPhone6S, .iPhone6SPlus, .iPhone7, .iPhone7_2, .iPhone7Plus, .iPhone7Plus_2, .iPhoneSE:
+            return true
+        default:
+            return false
+        }
+    }
 
     // MARK: - Initialization
 
-    init() {
+    override init() {
+        super.init()
         subscribeOnAllnotifications()
     }
 
@@ -40,10 +54,33 @@ final class InterruptionNotificationService {
 
     func subscribeOnAllnotifications() {
         subscribeOnSystemNotifications()
+        subscribeOnLegacyRateNotification(player: player)
     }
 
     func unsubscribeFromAllNotifications() {
         SubscriptionType.allCases.forEach(unsubscribe(from:))
+        unsubscribeOnLegacyRateNotification()
+    }
+
+    /// - Need for iPhone 7 and above models
+    func subscribeOnLegacyRateNotification(player: AVPlayer?) {
+        self.player = player
+        player?.addObserver(self, forKeyPath: Constants.rateKey, options: [], context: nil)
+    }
+
+    func unsubscribeOnLegacyRateNotification() {
+        player?.removeObserver(self, forKeyPath: Constants.rateKey)
+    }
+
+    // MARK: - NSObject
+
+    override func observeValue(forKeyPath keyPath: String?,
+                               of object: Any?,
+                               change: [NSKeyValueChangeKey : Any]?,
+                               context: UnsafeMutableRawPointer?) {
+        if keyPath == Constants.rateKey, isUseLegacyMethodRateDetection {
+            setInterruptionReasonState(state: .rateDidChange)
+        }
     }
 
     // MARK: - Private methods
@@ -84,6 +121,9 @@ private extension InterruptionNotificationService {
 
     @objc
     func rateDidChange() {
+        guard !isUseLegacyMethodRateDetection else {
+            return
+        }
         setInterruptionReasonState(state: .rateDidChange)
     }
 
