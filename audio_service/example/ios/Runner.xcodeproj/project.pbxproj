@@ -11,6 +11,7 @@
 		341854A6274263A100B94EC7 /* PlayerCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 341854A5274263A100B94EC7 /* PlayerCenter.swift */; };
 		341854A82742640000B94EC7 /* ContentMetaData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 341854A72742640000B94EC7 /* ContentMetaData.swift */; };
 		341854AA2742641800B94EC7 /* PlayerCenterProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 341854A92742641800B94EC7 /* PlayerCenterProtocol.swift */; };
+		34A103BE2745A655007E86B5 /* DeviceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A103BD2745A655007E86B5 /* DeviceModel.swift */; };
 		34E5207327280BB600A68272 /* InterruptionNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E5207227280BB600A68272 /* InterruptionNotificationService.swift */; };
 		34E5207527280BC600A68272 /* InterruptionReasons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E5207427280BC600A68272 /* InterruptionReasons.swift */; };
 		34E5207727280BD900A68272 /* InterruptionNotificationServiceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E5207627280BD900A68272 /* InterruptionNotificationServiceDelegate.swift */; };
@@ -43,6 +44,7 @@
 		341854A5274263A100B94EC7 /* PlayerCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerCenter.swift; sourceTree = "<group>"; };
 		341854A72742640000B94EC7 /* ContentMetaData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentMetaData.swift; sourceTree = "<group>"; };
 		341854A92742641800B94EC7 /* PlayerCenterProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerCenterProtocol.swift; sourceTree = "<group>"; };
+		34A103BD2745A655007E86B5 /* DeviceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceModel.swift; sourceTree = "<group>"; };
 		34E5207027280B2A00A68272 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		34E5207227280BB600A68272 /* InterruptionNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterruptionNotificationService.swift; sourceTree = "<group>"; };
 		34E5207427280BC600A68272 /* InterruptionReasons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterruptionReasons.swift; sourceTree = "<group>"; };
@@ -93,6 +95,7 @@
 				34E5207227280BB600A68272 /* InterruptionNotificationService.swift */,
 				34E5207427280BC600A68272 /* InterruptionReasons.swift */,
 				34E5207627280BD900A68272 /* InterruptionNotificationServiceDelegate.swift */,
+				34A103BD2745A655007E86B5 /* DeviceModel.swift */,
 			);
 			path = PauseDetectService;
 			sourceTree = "<group>";
@@ -348,6 +351,7 @@
 				341854A82742640000B94EC7 /* ContentMetaData.swift in Sources */,
 				34E5207527280BC600A68272 /* InterruptionReasons.swift in Sources */,
 				341854AA2742641800B94EC7 /* PlayerCenterProtocol.swift in Sources */,
+				34A103BE2745A655007E86B5 /* DeviceModel.swift in Sources */,
 				AAAE6617271DC6A00069A6F7 /* pip_plugin.swift in Sources */,
 				34E5207327280BB600A68272 /* InterruptionNotificationService.swift in Sources */,
 			);
