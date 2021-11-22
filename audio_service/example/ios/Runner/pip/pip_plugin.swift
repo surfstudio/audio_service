@@ -51,6 +51,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
 
     // MARK: - Private properties
 
+    private var isNeedAutoResume: Bool = true
     private static let interruptionNotificationService = InterruptionNotificationService()
     private var screenLockState: ScreenLockState = .unlocked
     private static let playerCenter: PlayerCenterProtocol = PlayerCenter()
@@ -92,12 +93,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         SwiftFlutterPipPlugin.fltPlayer?.isPipActive = true
         channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: true])
         SwiftFlutterPipPlugin.playerCenter.setupControlOnMediaCenter(isEnable: true)
-        SwiftFlutterPipPlugin.playerCenter.onTogglePlayPause = { [weak self] in
-            let player = SwiftFlutterPipPlugin.playerLayer?.player
-            (self?.isPaused() ?? true) ? player?.play() : player?.pause()
-        }
-        SwiftFlutterPipPlugin.playerCenter.onPlay = SwiftFlutterPipPlugin.playerLayer?.player?.play
-        SwiftFlutterPipPlugin.playerCenter.onPause = SwiftFlutterPipPlugin.playerLayer?.player?.pause
+        configureActions()
         SwiftFlutterPipPlugin
             .interruptionNotificationService
             .subscribeOnLegacyRateNotification(player: SwiftFlutterPipPlugin.playerLayer?.player)
@@ -239,7 +235,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     // MARK: - Private methods
     
     @objc
-    private func didChangeScreenRecordingStatus() {
+    private func didChangeScreenRecordingStatus(note : NSNotification) {
         SwiftFlutterPipPlugin.fltPlayer?.isPipActive = false
         channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: false])
         SwiftFlutterPipPlugin.fltPlayer?.isPipActive = false
@@ -293,12 +289,36 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
                 return
             }
             switch self.screenLockState {
-            case .locked:
-                SwiftFlutterPipPlugin.playerLayer?.player?.play()
+            case .locked where self.isNeedAutoResume:
+                self.playPlayer()
             case .unlocked:
+                break
+            default:
                 break
             }
         }
+    }
+
+    func configureActions() {
+        SwiftFlutterPipPlugin.playerCenter.onTogglePlayPause = { [weak self] in
+            (self?.isPaused() ?? true) ? self?.playPlayer() : self?.pausePlayer()
+        }
+        SwiftFlutterPipPlugin.playerCenter.onPlay = { [weak self] in
+            self?.playPlayer()
+        }
+        SwiftFlutterPipPlugin.playerCenter.onPause = { [weak self] in
+            self?.pausePlayer()
+        }
+    }
+
+    func playPlayer() {
+        SwiftFlutterPipPlugin.playerLayer?.player?.play()
+        isNeedAutoResume = true
+    }
+
+    func pausePlayer() {
+        SwiftFlutterPipPlugin.playerLayer?.player?.pause()
+        isNeedAutoResume = false
     }
 
 }

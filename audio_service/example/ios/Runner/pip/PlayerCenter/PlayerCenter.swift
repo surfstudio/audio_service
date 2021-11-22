@@ -35,27 +35,17 @@ final class PlayerCenter: PlayerCenterProtocol {
     }
 
     func setupControlOnMediaCenter(isEnable: Bool) {
+        UIApplication.shared.beginReceivingRemoteControlEvents()
         playCommandIsEnabledInPreviousState = commandCenter.playCommand.isEnabled
         pauseCommandIsEnabledInPreviousState = commandCenter.pauseCommand.isEnabled
         playPauseCommandIsEnabledInPreviousState = commandCenter.togglePlayPauseCommand.isEnabled
 
-        commandCenter.playCommand.isEnabled = isEnable
-        commandCenter.playCommand.addTarget { [weak self] event in
-            self?.player?.play()
-            self?.onPlay?()
-            return .success
-        }
+        commandCenter.playCommand.isEnabled = false
+        addTargetPlay()
         commandCenter.pauseCommand.isEnabled = isEnable
-        commandCenter.pauseCommand.addTarget { [weak self] event in
-            self?.player?.pause()
-            self?.onPause?()
-            return .success
-        }
+        addTargetPause()
         commandCenter.togglePlayPauseCommand.isEnabled = isEnable
-        commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
-            self?.onTogglePlayPause?()
-            return .success
-        }
+        addTargetOnTogglePlayPause()
     }
 
     func discardIsEnabledControllsState() {
@@ -64,4 +54,37 @@ final class PlayerCenter: PlayerCenterProtocol {
         commandCenter.togglePlayPauseCommand.isEnabled = playPauseCommandIsEnabledInPreviousState
     }
 
+}
+
+// MARK: - Private Methods
+
+private extension PlayerCenter {
+
+    func addTargetPause() {
+        commandCenter.pauseCommand.addTarget { [weak self] event in
+            self?.player?.pause()
+            self?.onPause?()
+            self?.commandCenter.pauseCommand.removeTarget(nil)
+            self?.addTargetPlay()
+            return .success
+        }
+    }
+
+    func addTargetPlay() {
+        commandCenter.playCommand.addTarget { [weak self] event in
+            self?.player?.play()
+            self?.onPlay?()
+            self?.commandCenter.playCommand.removeTarget(nil)
+            self?.addTargetPause()
+            return .success
+        }
+    }
+
+    func addTargetOnTogglePlayPause() {
+        commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
+            self?.onTogglePlayPause?()
+            return .success
+        }
+    }
+    
 }
