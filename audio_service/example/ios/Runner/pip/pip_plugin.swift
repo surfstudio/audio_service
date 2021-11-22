@@ -51,7 +51,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
 
     // MARK: - Private properties
 
-    private var isNeedAutoResume: Bool = true
+    private var playingPiP: Bool = true
     private static let interruptionNotificationService = InterruptionNotificationService()
     private var screenLockState: ScreenLockState = .unlocked
     private static let playerCenter: PlayerCenterProtocol = PlayerCenter()
@@ -144,7 +144,9 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     
     // Играет ли текущий плеер
     func isCurrentPlayerPlaying() -> Bool {
-        return SwiftFlutterPipPlugin.newPlayer?.rate != 0 && SwiftFlutterPipPlugin.newPlayer?.error == nil
+        let playing = SwiftFlutterPipPlugin.newPlayer?.rate != 0 && SwiftFlutterPipPlugin.newPlayer?.error == nil
+        let pipModeIsActive = SwiftFlutterPipPlugin.fltPlayer?.isPipActive ?? false
+        return pipModeIsActive ? playingPiP : playing
     }
     
     
@@ -282,14 +284,18 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
 
     private func resumePauseIfScreenLocked() {
         guard SwiftFlutterPipPlugin.playerLayer?.player?.rate == .zero else {
+            playingPiP = true
             return
+        }
+        if isPaused() {
+            playingPiP = false
         }
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + Constants.delayBetweenScreenlockAndRateChange) { [weak self] in
             guard let self = self else {
                 return
             }
             switch self.screenLockState {
-            case .locked where self.isNeedAutoResume:
+            case .locked where self.playingPiP:
                 self.playPlayer()
             case .unlocked:
                 break
@@ -299,7 +305,7 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
         }
     }
 
-    func configureActions() {
+    private func configureActions() {
         SwiftFlutterPipPlugin.playerCenter.onTogglePlayPause = { [weak self] in
             (self?.isPaused() ?? true) ? self?.playPlayer() : self?.pausePlayer()
         }
@@ -311,14 +317,14 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
         }
     }
 
-    func playPlayer() {
+    private func playPlayer() {
         SwiftFlutterPipPlugin.playerLayer?.player?.play()
-        isNeedAutoResume = true
+        playingPiP = true
     }
 
-    func pausePlayer() {
+    private func pausePlayer() {
         SwiftFlutterPipPlugin.playerLayer?.player?.pause()
-        isNeedAutoResume = false
+        playingPiP = false
     }
 
 }
