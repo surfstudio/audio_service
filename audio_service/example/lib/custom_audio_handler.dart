@@ -1,6 +1,9 @@
 // ignore_for_file: public_member_api_docs
 
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
+import 'package:audio_service_example/pip/pip_interactor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:video_player/video_player.dart';
 
@@ -17,6 +20,7 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   );
 
   bool _isStopped = false;
+  bool isTrylyPlaying = true;
 
   VideoPlayerController? _controller;
   final BehaviorSubject<VideoPlayerController?> _controllerSubject =
@@ -25,7 +29,9 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   ValueStream<VideoPlayerController?> get controllerStream =>
       _controllerSubject.stream;
 
-  VideoPlayerHandler() {
+  final PipInteractor pipInteractor;
+
+  VideoPlayerHandler(this.pipInteractor) {
     _reinitController();
   }
 
@@ -105,22 +111,44 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
       processingState = AudioProcessingState.error;
     }
 
-    final newState = PlaybackState(
-      controls: [
-        MediaControl.skipToPrevious,
-        if (videoControllerValue?.isPlaying ?? false)
-          MediaControl.pause
-        else
-          MediaControl.play,
-        MediaControl.skipToNext,
-        MediaControl.stop,
-      ],
-      bufferedPosition: Duration.zero,
-      updatePosition: videoControllerValue?.position ?? Duration.zero,
-      playing: videoControllerValue?.isPlaying ?? false,
-      processingState: processingState,
-    );
+    final isTrylyPlayingNew = await pipInteractor.isCurrentPlayerActive();
 
-    playbackState.add(newState);
+    if (pipInteractor.isPipModeLast) {
+      final newState = PlaybackState(
+        controls: [
+          MediaControl.skipToPrevious,
+          if (videoControllerValue?.isPlaying ?? false)
+            MediaControl.pause
+          else
+            MediaControl.play,
+          MediaControl.skipToNext,
+          MediaControl.stop,
+        ],
+        bufferedPosition: Duration.zero,
+        updatePosition: videoControllerValue?.position ?? Duration.zero,
+        playing: isTrylyPlayingNew,
+        processingState: processingState,
+      );
+
+      playbackState.add(newState);
+    } else {
+      final newState = PlaybackState(
+        controls: [
+          MediaControl.skipToPrevious,
+          if (videoControllerValue?.isPlaying ?? false)
+            MediaControl.pause
+          else
+            MediaControl.play,
+          MediaControl.skipToNext,
+          MediaControl.stop,
+        ],
+        bufferedPosition: Duration.zero,
+        updatePosition: videoControllerValue?.position ?? Duration.zero,
+        playing: videoControllerValue?.isPlaying ?? false,
+        processingState: processingState,
+      );
+
+      playbackState.add(newState);
+    }
   }
 }
