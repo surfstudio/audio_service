@@ -131,6 +131,8 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
     playbackState.add(newState);
   }
 
+  /// Активен ли стэйт воспроизведения, возвращает bool
+  /// Условие снижает нагрузку на async запросы
   Future<bool> _playIsActive(VideoPlayerValue? videoControllerValue) async {
     if (pipInteractor.isPipModeLast) {
       final isTrylyPlayingNew = await pipInteractor.isCurrentPlayerActive();
@@ -140,4 +142,5 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
       return _playing;
     }
   }
+
 }
