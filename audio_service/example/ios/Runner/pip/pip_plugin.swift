@@ -283,11 +283,7 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
     }
 
     private func resumePauseIfScreenLocked() {
-        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate == .zero else {
-            playingPiP = true
-            updatePlayingStateFLTVideoPlayer()
-            return
-        }
+        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate == .zero else { return }
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + Constants.delayBetweenScreenlockAndRateChange) { [weak self] in
             guard let self = self else {
                 return
@@ -295,12 +291,34 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
             switch self.screenLockState {
             case .locked where self.playingPiP:
                 self.playPlayer()
-            case .unlocked where self.isPaused():
-                self.pausePlayer()
+            case .unlocked:
+                break
             default:
                 break
             }
+            self.configureStates()
         }
+    }
+
+    private func configureStates() {
+        confugurePausedState()
+        configurePlayingState()
+    }
+
+    private func confugurePausedState() {
+        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate == .zero, isPaused() else {
+            return
+        }
+        playingPiP = false
+        updatePlayingStateFLTVideoPlayer()
+    }
+
+    private func configurePlayingState() {
+        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate != .zero, !isPaused() else {
+            return
+        }
+        playingPiP = true
+        updatePlayingStateFLTVideoPlayer()
     }
 
     private func configureActions() {
@@ -315,13 +333,15 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
         }
     }
 
-    func updatePlayingStateFLTVideoPlayer() {
+    private func updatePlayingStateFLTVideoPlayer() {
         guard let isPipActive = SwiftFlutterPipPlugin.fltPlayer?.isPipActive,
               isPipActive == true else { return }
         if playingPiP {
             SwiftFlutterPipPlugin.fltPlayer?.play()
+            SwiftFlutterPipPlugin.playerCenter.updateTargets(state: .play)
         } else {
             SwiftFlutterPipPlugin.fltPlayer?.pause()
+            SwiftFlutterPipPlugin.playerCenter.updateTargets(state: .pause)
         }
     }
 
@@ -335,6 +355,18 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
         SwiftFlutterPipPlugin.playerLayer?.player?.pause()
         playingPiP = false
         updatePlayingStateFLTVideoPlayer()
+    }
+
+}
+
+// MARK: - Support
+
+private extension SwiftFlutterPipPlugin {
+
+    func delay(_ after: TimeInterval, completion: @escaping () -> Void) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + after) {
+            completion()
+        }
     }
 
 }

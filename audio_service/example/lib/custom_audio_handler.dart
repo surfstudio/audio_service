@@ -110,11 +110,11 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
       }
       processingState = AudioProcessingState.error;
     }
-
+    final isPlaying = await _playIsActive(videoControllerValue);
     final newState = PlaybackState(
       controls: [
         MediaControl.skipToPrevious,
-        if (videoControllerValue?.isPlaying ?? false)
+        if (isPlaying)
           MediaControl.pause
         else
           MediaControl.play,
@@ -123,7 +123,7 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
       ],
       bufferedPosition: Duration.zero,
       updatePosition: videoControllerValue?.position ?? Duration.zero,
-      playing: await _playIsActive(videoControllerValue),
+      playing: isPlaying,
       processingState: processingState,
     );
 
@@ -131,12 +131,7 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   }
 
   Future<bool> _playIsActive(VideoPlayerValue? videoControllerValue) async {
-    if (pipInteractor.isPipModeLast) {
-      final isTrylyPlayingNew = await pipInteractor.isCurrentPlayerActive();
-      return isTrylyPlayingNew;
-    } else {
-      final _playing = videoControllerValue?.isPlaying ?? false;
-      return _playing;
-    }
+    final isTrylyPlayingNew = await pipInteractor.isCurrentPlayerActive();
+    return isTrylyPlayingNew;
   }
 }

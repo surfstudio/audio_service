@@ -40,7 +40,7 @@ final class PlayerCenter: PlayerCenterProtocol {
         pauseCommandIsEnabledInPreviousState = commandCenter.pauseCommand.isEnabled
         playPauseCommandIsEnabledInPreviousState = commandCenter.togglePlayPauseCommand.isEnabled
 
-        commandCenter.playCommand.isEnabled = false
+        commandCenter.playCommand.isEnabled = true
         addTargetPlay()
         commandCenter.pauseCommand.isEnabled = isEnable
         addTargetPause()
@@ -54,6 +54,20 @@ final class PlayerCenter: PlayerCenterProtocol {
         commandCenter.togglePlayPauseCommand.isEnabled = playPauseCommandIsEnabledInPreviousState
     }
 
+    func updateTargets(state: PlayingState) {
+        switch state {
+        case .play:
+            addTargetPause()
+            commandCenter.playCommand.removeTarget(nil)
+        case .pause:
+            addTargetPlay()
+            commandCenter.pauseCommand.removeTarget(nil)
+        }
+    }
+}
+
+enum PlayingState {
+    case play, pause
 }
 
 // MARK: - Private Methods

@@ -19,4 +19,5 @@ protocol PlayerCenterProtocol: AnyObject {
     func setupControlOnMediaCenter(isEnable: Bool)
     func discardIsEnabledControllsState()
 
+    func updateTargets(state: PlayingState) 
 }
