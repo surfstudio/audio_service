@@ -55,6 +55,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     private static let interruptionNotificationService = InterruptionNotificationService()
     private var screenLockState: ScreenLockState = .unlocked
     private static let playerCenter: PlayerCenterProtocol = PlayerCenter()
+    private var playingSessionOpen = false
 
     // MARK: - Public initialization
     
@@ -283,7 +284,10 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
     }
 
     private func resumePauseIfScreenLocked() {
-        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate == .zero else { return }
+        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate == .zero else {
+            configureStates()
+            return
+        }
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + Constants.delayBetweenScreenlockAndRateChange) { [weak self] in
             guard let self = self else {
                 return
@@ -306,18 +310,20 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
     }
 
     private func confugurePausedState() {
-        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate == .zero, isPaused() else {
+        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate == .zero, isPaused(), !playingSessionOpen else {
             return
         }
         playingPiP = false
+        playingSessionOpen = true
         updatePlayingStateFLTVideoPlayer()
     }
 
     private func configurePlayingState() {
-        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate != .zero, !isPaused() else {
+        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate == 1.0, playingSessionOpen else {
             return
         }
         playingPiP = true
+        playingSessionOpen = false
         updatePlayingStateFLTVideoPlayer()
     }
 
@@ -348,12 +354,14 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
     private func playPlayer() {
         SwiftFlutterPipPlugin.playerLayer?.player?.play()
         playingPiP = true
+        playingSessionOpen = false
         updatePlayingStateFLTVideoPlayer()
     }
 
     private func pausePlayer() {
         SwiftFlutterPipPlugin.playerLayer?.player?.pause()
         playingPiP = false
+        playingSessionOpen = true
         updatePlayingStateFLTVideoPlayer()
     }
 

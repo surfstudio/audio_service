@@ -7,8 +7,9 @@
 //
 
 import MediaPlayer
+import Foundation
 
-final class PlayerCenter: PlayerCenterProtocol {
+final class PlayerCenter: NSObject, PlayerCenterProtocol {
 
     // MARK: - Private properties
 
@@ -40,7 +41,7 @@ final class PlayerCenter: PlayerCenterProtocol {
         pauseCommandIsEnabledInPreviousState = commandCenter.pauseCommand.isEnabled
         playPauseCommandIsEnabledInPreviousState = commandCenter.togglePlayPauseCommand.isEnabled
 
-        commandCenter.playCommand.isEnabled = true
+        commandCenter.playCommand.isEnabled = isEnable
         addTargetPlay()
         commandCenter.pauseCommand.isEnabled = isEnable
         addTargetPause()
@@ -58,10 +59,8 @@ final class PlayerCenter: PlayerCenterProtocol {
         switch state {
         case .play:
             addTargetPause()
-            commandCenter.playCommand.removeTarget(nil)
         case .pause:
             addTargetPlay()
-            commandCenter.pauseCommand.removeTarget(nil)
         }
     }
 }
