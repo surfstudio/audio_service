@@ -111,44 +111,32 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
       processingState = AudioProcessingState.error;
     }
 
-    final isTrylyPlayingNew = await pipInteractor.isCurrentPlayerActive();
+    final newState = PlaybackState(
+      controls: [
+        MediaControl.skipToPrevious,
+        if (videoControllerValue?.isPlaying ?? false)
+          MediaControl.pause
+        else
+          MediaControl.play,
+        MediaControl.skipToNext,
+        MediaControl.stop,
+      ],
+      bufferedPosition: Duration.zero,
+      updatePosition: videoControllerValue?.position ?? Duration.zero,
+      playing: await _playIsActive(videoControllerValue),
+      processingState: processingState,
+    );
 
+    playbackState.add(newState);
+  }
+
+  Future<bool> _playIsActive(VideoPlayerValue? videoControllerValue) async {
     if (pipInteractor.isPipModeLast) {
-      final newState = PlaybackState(
-        controls: [
-          MediaControl.skipToPrevious,
-          if (videoControllerValue?.isPlaying ?? false)
-            MediaControl.pause
-          else
-            MediaControl.play,
-          MediaControl.skipToNext,
-          MediaControl.stop,
-        ],
-        bufferedPosition: Duration.zero,
-        updatePosition: videoControllerValue?.position ?? Duration.zero,
-        playing: isTrylyPlayingNew,
-        processingState: processingState,
-      );
-
-      playbackState.add(newState);
+      final isTrylyPlayingNew = await pipInteractor.isCurrentPlayerActive();
+      return isTrylyPlayingNew;
     } else {
-      final newState = PlaybackState(
-        controls: [
-          MediaControl.skipToPrevious,
-          if (videoControllerValue?.isPlaying ?? false)
-            MediaControl.pause
-          else
-            MediaControl.play,
-          MediaControl.skipToNext,
-          MediaControl.stop,
-        ],
-        bufferedPosition: Duration.zero,
-        updatePosition: videoControllerValue?.position ?? Duration.zero,
-        playing: videoControllerValue?.isPlaying ?? false,
-        processingState: processingState,
-      );
-
-      playbackState.add(newState);
+      final _playing = videoControllerValue?.isPlaying ?? false;
+      return _playing;
     }
   }
 }
