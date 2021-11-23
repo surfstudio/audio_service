@@ -1,6 +1,9 @@
 // ignore_for_file: public_member_api_docs
 
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
+import 'package:audio_service_example/pip/pip_interactor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:video_player/video_player.dart';
 
@@ -25,8 +28,25 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   ValueStream<VideoPlayerController?> get controllerStream =>
       _controllerSubject.stream;
 
-  VideoPlayerHandler() {
+  final PipInteractor pipInteractor;
+
+  VideoPlayerHandler(this.pipInteractor) {
     _reinitController();
+
+    Timer.periodic(const Duration(seconds: 1), (_) async {
+      final isTrylyPlaying = await pipInteractor.isCurrentPlayerActive();
+
+      final newState = playbackState.value.copyWith(
+        controls: [
+          MediaControl.skipToPrevious,
+          if (isTrylyPlaying) MediaControl.pause else MediaControl.play,
+          MediaControl.skipToNext,
+          MediaControl.stop,
+        ],
+      );
+
+      playbackState.add(newState);
+    });
   }
 
   @override
