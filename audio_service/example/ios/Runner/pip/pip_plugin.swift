@@ -344,11 +344,9 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
               isPipActive == true else { return }
         if playingPiP {
             channel.invokeMethod(playPressed, arguments: [])
-            SwiftFlutterPipPlugin.fltPlayer?.play()
             SwiftFlutterPipPlugin.playerCenter.updateTargets(state: .play)
         } else {
             channel.invokeMethod(pausePressed, arguments: [])
-            SwiftFlutterPipPlugin.fltPlayer?.pause()
             SwiftFlutterPipPlugin.playerCenter.updateTargets(state: .pause)
         }
     }
@@ -365,18 +363,6 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
         playingPiP = false
         playingSessionOpen = true
         updatePlayingStateFLTVideoPlayer()
-    }
-
-}
-
-// MARK: - Support
-
-private extension SwiftFlutterPipPlugin {
-
-    func delay(_ after: TimeInterval, completion: @escaping () -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + after) {
-            completion()
-        }
     }
 
 }

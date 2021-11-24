@@ -58,8 +58,12 @@ final class PlayerCenter: NSObject, PlayerCenterProtocol {
     func updateTargets(state: PlayingState) {
         switch state {
         case .play:
+            commandCenter.playCommand.removeTarget(nil)
+            commandCenter.pauseCommand.removeTarget(nil)
             addTargetPause()
         case .pause:
+            commandCenter.playCommand.removeTarget(nil)
+            commandCenter.pauseCommand.removeTarget(nil)
             addTargetPlay()
         }
     }
