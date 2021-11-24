@@ -6,7 +6,6 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audio_service_example/pip/pip_interactor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:video_player/video_player.dart';
-import 'package:relation/relation.dart';
 
 /// An [AudioHandler] for playing a single item.
 class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
@@ -33,18 +32,6 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   final PipInteractor pipInteractor;
 
   VideoPlayerHandler(this.pipInteractor) {
-    pipInteractor.playAction.stream.listen((_) {
-      if (_controller != null) {
-        _controller!.play();
-      }
-    });
-
-    pipInteractor.pauseAction.stream.listen((_) {
-      if (_controller != null) {
-        _controller!.pause();
-      }
-    });
-
     _reinitController();
   }
 
@@ -103,8 +90,7 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> _broadcastState() async {
     final videoControllerValue = _controller?.value;
 
-    final isPlaying = await _playIsActive(videoControllerValue);
-    // final isPlaying = videoControllerValue?.isPlaying ?? false;
+    final isPlaying = videoControllerValue?.isPlaying ?? false;
     if (isPlaying) _isStopped = false;
     if (_isStopped) return;
 
@@ -142,18 +128,6 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
     );
 
     playbackState.add(newState);
-  }
-
-  /// Активен ли стэйт воспроизведения, возвращает bool
-  /// Условие снижает нагрузку на async запросы
-  Future<bool> _playIsActive(VideoPlayerValue? videoControllerValue) async {
-    if (pipInteractor.isPipModeLast) {
-      final isTrylyPlayingNew = await pipInteractor.isCurrentPlayerActive();
-      return isTrylyPlayingNew;
-    } else {
-      final _playing = videoControllerValue?.isPlaying ?? false;
-      return _playing;
-    }
   }
 
 }
