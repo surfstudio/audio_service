@@ -6,6 +6,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audio_service_example/pip/pip_interactor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:video_player/video_player.dart';
+import 'package:relation/relation.dart';
 
 /// An [AudioHandler] for playing a single item.
 class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
@@ -32,6 +33,18 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   final PipInteractor pipInteractor;
 
   VideoPlayerHandler(this.pipInteractor) {
+    pipInteractor.playAction.stream.listen((_) {
+      if (_controller != null) {
+        _controller!.play();
+      }
+    });
+
+    pipInteractor.pauseAction.stream.listen((_) {
+      if (_controller != null) {
+        _controller!.pause();
+      }
+    });
+
     _reinitController();
   }
 

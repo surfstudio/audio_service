@@ -343,9 +343,11 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
         guard let isPipActive = SwiftFlutterPipPlugin.fltPlayer?.isPipActive,
               isPipActive == true else { return }
         if playingPiP {
+            channel.invokeMethod(playPressed, arguments: [])
             SwiftFlutterPipPlugin.fltPlayer?.play()
             SwiftFlutterPipPlugin.playerCenter.updateTargets(state: .play)
         } else {
+            channel.invokeMethod(pausePressed, arguments: [])
             SwiftFlutterPipPlugin.fltPlayer?.pause()
             SwiftFlutterPipPlugin.playerCenter.updateTargets(state: .pause)
         }

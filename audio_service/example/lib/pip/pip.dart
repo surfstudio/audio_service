@@ -3,7 +3,11 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+/// Signature of callbacks that have no arguments and return no data.
+// typedef VoidCallback = void Function();
 
 /// Название канала
 const _channelName = 'the.pip.pip';
@@ -47,10 +51,12 @@ enum FlutterPipButton {
   back,
 }
 
+typedef VoidCallback = void Function();
+
 ///  Проектный плагин для реализации режима Picture in Picture
 class PipPlugin {
-  // final VoidCallback play;
-  // final VoidCallback pause;
+  final VoidCallback play;
+  final VoidCallback pause;
   // final VoidCallback forward;
   // final VoidCallback back;
 
@@ -82,11 +88,11 @@ class PipPlugin {
       await _channel.invokeMethod<bool>(_isScreenLockedMethod) ?? false;
 
   PipPlugin(
-      // this.play,
-      // this.pause,
-      // this.forward,
-      // this.back,
-      ) {
+    this.play,
+    this.pause,
+    // this.forward,
+    // this.back,
+  ) {
     isPipAvailable();
 
     _channel.setMethodCallHandler((call) {
@@ -95,18 +101,18 @@ class PipPlugin {
           _pipModeStateChanged(((call.arguments as Map<Object?, Object?>)
               .cast<String, bool>())[_isPipModeActiveArgument]!);
           break;
-        // case _play:
-        //   play();
-        //   break;
+        case _play:
+          play();
+          break;
         // case _forward:
         //   forward();
         //   break;
         // case _back:
         //   back();
         //   break;
-        // case _pause:
-        //   pause();
-        //   break;
+        case _pause:
+          pause();
+          break;
       }
       return Future<bool>.value(true);
     });
