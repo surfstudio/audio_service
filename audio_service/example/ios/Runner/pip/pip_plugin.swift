@@ -87,7 +87,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         SwiftFlutterPipPlugin.fltPlayer?.isPipActive = false
         channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: false])
         SwiftFlutterPipPlugin.playerCenter.discardIsEnabledControllsState()
-        SwiftFlutterPipPlugin.interruptionNotificationService.unsubscribeOnLegacyRateNotification()
+        updatePlayingStateFLTVideoPlayer()
     }
     
     public func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
@@ -98,6 +98,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         SwiftFlutterPipPlugin
             .interruptionNotificationService
             .subscribeOnLegacyRateNotification(player: SwiftFlutterPipPlugin.playerLayer?.player)
+        updatePlayingStateFLTVideoPlayer()
     }
     
     public func picture(_ pictureInPictureController: AVPictureInPictureController, restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void) {
@@ -159,7 +160,6 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     // Прекратить режим картинка в картинке
     func closePip() {
         if(SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPictureActive ?? false) {
-
             channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: false])
             SwiftFlutterPipPlugin.pictureInPictureController?.stopPictureInPicture()
         }
@@ -250,7 +250,9 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     }
 
     private func enablePiPMode(textureIDOpt: Int?) {
-        guard SwiftFlutterPipPlugin.playerLayer == nil else { return }
+        guard SwiftFlutterPipPlugin.playerLayer == nil else {
+            return
+        }
         SwiftFlutterPipPlugin.interruptionNotificationService.subscribeOnAllnotifications()
         if let player = getFLTPlayer(textureIDOpt: textureIDOpt), AVPictureInPictureController.isPictureInPictureSupported() {
             SwiftFlutterPipPlugin.fltPlayer?.isPipActive = SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPictureActive ?? false
@@ -290,6 +292,10 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
             resumePauseIfScreenLocked()
         case .screenDidLocked:
             screenLockState = .locked
+            if let isPiPActive = SwiftFlutterPipPlugin.fltPlayer?.isPipActive,
+               !isPiPActive {
+                configureStates()
+            }
         case .screenDidUnlocked:
             screenLockState = .unlocked
         case .system:
@@ -354,8 +360,8 @@ extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
     }
 
     private func updatePlayingStateFLTVideoPlayer() {
-        guard let isPipActive = SwiftFlutterPipPlugin.fltPlayer?.isPipActive,
-              isPipActive == true else { return }
+//        guard let isPipActive = SwiftFlutterPipPlugin.fltPlayer?.isPipActive,
+//              isPipActive == true else { return }
         if playingPiP {
             channel.invokeMethod(playPressed, arguments: [])
             SwiftFlutterPipPlugin.playerCenter.updateTargets(state: .play)

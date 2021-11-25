@@ -69,7 +69,9 @@ final class InterruptionNotificationService: NSObject {
     }
 
     func unsubscribeOnLegacyRateNotification() {
-        player?.removeObserver(self, forKeyPath: Constants.rateKey)
+        if (player?.observationInfo != nil) {
+            player?.removeObserver(self, forKeyPath: Constants.rateKey)
+        }
     }
 
     // MARK: - NSObject
@@ -110,7 +112,9 @@ final class InterruptionNotificationService: NSObject {
     }
 
     private func unsubscribe(from subscription: SubscriptionType) {
-        eventCenter.removeObserver(self, name: subscription.notificationName, object: nil)
+        if (eventCenter.observationInfo != nil) {
+            eventCenter.removeObserver(self, name: subscription.notificationName, object: nil)
+        }
     }
 
 }
