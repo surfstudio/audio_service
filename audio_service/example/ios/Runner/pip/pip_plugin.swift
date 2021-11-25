@@ -167,50 +167,11 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     
     // Разрешить/запретить автозапуск режима картинка в картинке
     func setAutoPipMode(_ call : FlutterMethodCall) {
-        let args = call.arguments as! NSDictionary
-        
-        let params = args as! [String: Any]
-        let isAutoPipEnable = params[isAutoPipEnabledArg] as! Bool
-        let textureIDOpt = params[textureIdArg] as? Int
-        
-        let appDelegate = (UIApplication.shared.delegate as! FlutterAppDelegate)
-        SwiftFlutterPipPlugin.isAutoPip = isAutoPipEnable
-        if(isAutoPipEnable) {
-            SwiftFlutterPipPlugin.interruptionNotificationService.subscribeOnAllnotifications()
-            let playerPluginOpt = (UIApplication.shared.delegate as! FlutterAppDelegate).valuePublished(byPlugin: "FLTVideoPlayerPlugin") as? FLTVideoPlayerPlugin
-            if let textureID = textureIDOpt, let fltPlayer = playerPluginOpt?.players[textureID] as? FLTVideoPlayer, let player = fltPlayer.player {
-                if AVPictureInPictureController.isPictureInPictureSupported() {
-                    SwiftFlutterPipPlugin.fltPlayer = fltPlayer
-                    SwiftFlutterPipPlugin.fltPlayer?.isPipActive = SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPictureActive ?? false
-                    
-                    NotificationCenter.default.removeObserver(self)
-                    
-                    SwiftFlutterPipPlugin.newPlayer? = player
-                    SwiftFlutterPipPlugin.newPlayer?.actionAtItemEnd = .pause
-                    
-                    SwiftFlutterPipPlugin.playerLayer = AVPlayerLayer(player: player)
-                    SwiftFlutterPipPlugin.playerLayer?.contentsGravity = "top"
-                    SwiftFlutterPipPlugin.playerLayer?.bounds = UIScreen.main.bounds
-                    SwiftFlutterPipPlugin.playerLayer?.position = CGPoint.init(x: UIScreen.main.bounds.width / 2, y: SwiftFlutterPipPlugin.playerLayer!.videoRect.height / 2 + UIApplication.shared.statusBarFrame.height)
-                    appDelegate.window.rootViewController?.view.layer.insertSublayer(SwiftFlutterPipPlugin.playerLayer!, at: 0)
-                    appDelegate.window.rootViewController?.view.layer.sublayers?.first?.opacity = 0
-                    
-                    SwiftFlutterPipPlugin.pictureInPictureController = AVPictureInPictureController(playerLayer: SwiftFlutterPipPlugin.playerLayer!)
-                    SwiftFlutterPipPlugin.pictureInPictureController?.delegate = self
-                    
-                    if #available(iOS 11.0, *) {
-                        NotificationCenter.default.addObserver(self, selector: #selector(didChangeScreenRecordingStatus), name: NSNotification.Name.UIScreenCapturedDidChange, object: nil)
-                    }
-                }
-            }
+        let textureIDOpt = getTextureID(call)
+        if SwiftFlutterPipPlugin.isAutoPip {
+            enablePiPMode(textureIDOpt: textureIDOpt)
         } else {
-            SwiftFlutterPipPlugin.interruptionNotificationService.unsubscribeFromAllNotifications()
-            NotificationCenter.default.removeObserver(self)
-            SwiftFlutterPipPlugin.playerLayer?.removeFromSuperlayer()
-            SwiftFlutterPipPlugin.pictureInPictureController = nil
-            SwiftFlutterPipPlugin.playerLayer = nil
-            SwiftFlutterPipPlugin.newPlayer = nil
-            SwiftFlutterPipPlugin.fltPlayer = nil
+            disablePiPMode()
         }
     }
     
@@ -251,6 +212,15 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         SwiftFlutterPipPlugin.newPlayer = nil
     }
 
+    private func disablePiPMode() {
+        SwiftFlutterPipPlugin.playerLayer?.removeFromSuperlayer()
+        SwiftFlutterPipPlugin.pictureInPictureController = nil
+        SwiftFlutterPipPlugin.playerLayer = nil
+        SwiftFlutterPipPlugin.newPlayer = nil
+        SwiftFlutterPipPlugin.fltPlayer = nil
+        NotificationCenter.default.removeObserver(self)
+        SwiftFlutterPipPlugin.interruptionNotificationService.unsubscribeFromAllNotifications()
+    }
     private func isPaused() -> Bool {
         let player = SwiftFlutterPipPlugin.playerLayer?.player
         if #available(iOS 10.0, *), player?.timeControlStatus == .paused {
@@ -261,6 +231,50 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
             return true
         }
         return false
+    }
+
+    private func getTextureID(_ call : FlutterMethodCall) -> Int? {
+        let args = call.arguments as! NSDictionary
+        let params = args as! [String: Any]
+        let isAutoPipEnable = params[isAutoPipEnabledArg] as! Bool
+        SwiftFlutterPipPlugin.isAutoPip = isAutoPipEnable
+        return params[textureIdArg] as? Int
+    }
+
+    private func getFLTPlayer(textureIDOpt: Int?) -> AVPlayer? {
+        guard let textureID = textureIDOpt else { return nil }
+        let playerPluginOpt = (UIApplication.shared.delegate as! FlutterAppDelegate).valuePublished(byPlugin: "FLTVideoPlayerPlugin") as? FLTVideoPlayerPlugin
+        let fltPlayer = playerPluginOpt?.players[textureID] as? FLTVideoPlayer
+        SwiftFlutterPipPlugin.fltPlayer = fltPlayer
+        return fltPlayer?.player
+    }
+
+    private func enablePiPMode(textureIDOpt: Int?) {
+        guard SwiftFlutterPipPlugin.playerLayer == nil else { return }
+        SwiftFlutterPipPlugin.interruptionNotificationService.subscribeOnAllnotifications()
+        if let player = getFLTPlayer(textureIDOpt: textureIDOpt), AVPictureInPictureController.isPictureInPictureSupported() {
+            SwiftFlutterPipPlugin.fltPlayer?.isPipActive = SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPictureActive ?? false
+            
+            NotificationCenter.default.removeObserver(self)
+            
+            SwiftFlutterPipPlugin.newPlayer? = player
+            SwiftFlutterPipPlugin.newPlayer?.actionAtItemEnd = .pause
+            
+            SwiftFlutterPipPlugin.playerLayer = AVPlayerLayer(player: player)
+            SwiftFlutterPipPlugin.playerLayer?.contentsGravity = "top"
+            SwiftFlutterPipPlugin.playerLayer?.bounds = UIScreen.main.bounds
+            SwiftFlutterPipPlugin.playerLayer?.position = CGPoint.init(x: UIScreen.main.bounds.width / 2, y: SwiftFlutterPipPlugin.playerLayer!.videoRect.height / 2 + UIApplication.shared.statusBarFrame.height)
+            let appDelegate = (UIApplication.shared.delegate as! FlutterAppDelegate)
+            appDelegate.window.rootViewController?.view.layer.insertSublayer(SwiftFlutterPipPlugin.playerLayer!, at: 0)
+            appDelegate.window.rootViewController?.view.layer.sublayers?.first?.opacity = 0
+            
+            SwiftFlutterPipPlugin.pictureInPictureController = AVPictureInPictureController(playerLayer: SwiftFlutterPipPlugin.playerLayer!)
+            SwiftFlutterPipPlugin.pictureInPictureController?.delegate = self
+            
+            if #available(iOS 11.0, *) {
+                NotificationCenter.default.addObserver(self, selector: #selector(didChangeScreenRecordingStatus), name: NSNotification.Name.UIScreenCapturedDidChange, object: nil)
+            }
+        }
     }
 
 }
