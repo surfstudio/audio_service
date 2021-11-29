@@ -126,14 +126,16 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     
     // Разрешить/запретить автозапуск режима картинка в картинке
     func setAutoPipMode(_ call : FlutterMethodCall) {
-        let args = call.arguments as! NSDictionary
-        let params = args as! [String: Any]
-        let isAutoPipEnable = params[isAutoPipEnabledArg] as! Bool
-        SwiftFlutterPipPlugin.isAutoPip = isAutoPipEnable
-        textureIDOpt = params[textureIdArg] as? Int
+        let args = call.arguments as? NSDictionary
+        let params = args as? [String: Any]
+        let isAutoPipEnable = params?[isAutoPipEnabledArg] as? Bool
+        SwiftFlutterPipPlugin.isAutoPip = isAutoPipEnable ?? false
+        textureIDOpt = params?[textureIdArg] as? Int
+
         if SwiftFlutterPipPlugin.isAutoPip {
             enablePiPMode(textureIDOpt: textureIDOpt)
-            pipWrapper.pictureInPictureControllerWillStartPictureInPicture(player: SwiftFlutterPipPlugin.playerLayer?.player)
+            let player = SwiftFlutterPipPlugin.playerLayer?.player
+            pipWrapper.pictureInPictureControllerWillStartPictureInPicture(player: player)
         } else {
             SwiftFlutterPipPlugin.fltPlayer = nil
             removePiPPlayer()
