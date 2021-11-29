@@ -71,14 +71,6 @@ final class PiPWrapper: InterruptionNotificationServiceDelegate {
     // MARK: - InterruptionNotificationServiceDelegate
 
     func interruptionEventDidTriggered(_ reason: InterruptionReasons) {
-        switch UIApplication.shared.applicationState {
-        case .active:
-            print("App is active")
-        case .inactive:
-            print("App inactive")
-        case .background:
-            print("App background")
-        }
         switch reason {
         case .rateDidChange:
             /// - TODO: - Need check on available content if this ended and not repeatable
@@ -125,8 +117,6 @@ final class PiPWrapper: InterruptionNotificationServiceDelegate {
             switch self.screenLockState {
             case .locked where self.playingPiP:
                 self.playPlayer()
-            case .unlocked:
-                break
             default:
                 break
             }

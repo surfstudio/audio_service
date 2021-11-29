@@ -208,37 +208,48 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     }
 
     private func enablePiPMode(textureIDOpt: Int?) {
-        guard SwiftFlutterPipPlugin.playerLayer == nil else {
-            return
-        }
+        guard SwiftFlutterPipPlugin.playerLayer == nil else { return }
+
         pipWrapper.subscribeOnAllnotifications()
         if let player = getFLTPlayer(textureIDOpt: textureIDOpt), isAvailable() {
             SwiftFlutterPipPlugin.fltPlayer?.isPipActive = SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPictureActive ?? false
-            
             NotificationCenter.default.removeObserver(self)
             
             SwiftFlutterPipPlugin.newPlayer? = player
             SwiftFlutterPipPlugin.newPlayer?.actionAtItemEnd = .pause
             
-            SwiftFlutterPipPlugin.playerLayer = AVPlayerLayer(player: player)
-            SwiftFlutterPipPlugin.playerLayer?.contentsGravity = "top"
-            SwiftFlutterPipPlugin.playerLayer?.bounds = UIScreen.main.bounds
-            SwiftFlutterPipPlugin.playerLayer?.position = CGPoint.init(x: UIScreen.main.bounds.width / 2, y: SwiftFlutterPipPlugin.playerLayer!.videoRect.height / 2 + UIApplication.shared.statusBarFrame.height)
-            let appDelegate = (UIApplication.shared.delegate as! FlutterAppDelegate)
-            appDelegate.window.rootViewController?.view.layer.insertSublayer(SwiftFlutterPipPlugin.playerLayer!, at: 0)
-            appDelegate.window.rootViewController?.view.layer.sublayers?.first?.opacity = 0
-            
-            SwiftFlutterPipPlugin.pictureInPictureController = AVPictureInPictureController(playerLayer: SwiftFlutterPipPlugin.playerLayer!)
+            let playerLayer = makePlayerLayer(player: player)
+            SwiftFlutterPipPlugin.pictureInPictureController = AVPictureInPictureController(playerLayer: playerLayer)
             SwiftFlutterPipPlugin.pictureInPictureController?.delegate = self
+            SwiftFlutterPipPlugin.playerLayer = playerLayer
             
             if #available(iOS 11.0, *) {
-                NotificationCenter.default.addObserver(self, selector: #selector(didChangeScreenRecordingStatus), name: NSNotification.Name.UIScreenCapturedDidChange, object: nil)
+                NotificationCenter.default.addObserver(self,
+                                                       selector: #selector(didChangeScreenRecordingStatus),
+                                                       name: NSNotification.Name.UIScreenCapturedDidChange,
+                                                       object: nil)
             }
         }
     }
 
+    private func makePlayerLayer(player: AVPlayer) -> AVPlayerLayer {
+        let mainBounds = UIScreen.main.bounds
+        let statusBarFrame = UIApplication.shared.statusBarFrame
+        let playerLayer = AVPlayerLayer(player: player)
+        let position = CGPoint(x: mainBounds.width / 2,
+                               y: playerLayer.videoRect.height / 2 + statusBarFrame.height)
+        playerLayer.contentsGravity = "top"
+        playerLayer.bounds = mainBounds
+        playerLayer.position = position
+        let appDelegate = UIApplication.shared.delegate as? FlutterAppDelegate
+        appDelegate?.window.rootViewController?.view.layer.insertSublayer(playerLayer, at: 0)
+        appDelegate?.window.rootViewController?.view.layer.sublayers?.first?.opacity = 0
+
+        return playerLayer
+    }
+
     // Отправка сообщения play/pause из PiP 
-    func configureActionsPiPWrapper() {
+    private func configureActionsPiPWrapper() {
         pipWrapper.sendMessagePlay = { [weak self] in
             self?.channel.invokeMethod(playPressed, arguments: [])
         }
