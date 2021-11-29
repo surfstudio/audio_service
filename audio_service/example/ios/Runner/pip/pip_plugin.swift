@@ -40,7 +40,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     // MARK: - Private properties
 
     private var playingPiP: Bool = true
-    private let pipWrapper: PiPWrapperProtocol = PiPWrapper()
+    private var pipWrapper: PiPWrapperProtocol = PiPWrapper()
     private var textureIDOpt: Int?
 
     // MARK: - Public initialization

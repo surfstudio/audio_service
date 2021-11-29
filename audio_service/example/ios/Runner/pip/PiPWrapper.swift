@@ -114,19 +114,10 @@ private extension PiPWrapper {
     }
 
     func resumePauseIfScreenLocked() {
-        guard isPaused() else {
-            configureStates()
-            return
-        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-            guard let self = self else {
-                return
-            }
-            switch self.screenLockState {
-            case .locked where self.playingPiP:
+            guard let self = self else { return }
+            if self.screenLockState == .locked, self.isPaused(), self.playingPiP {
                 self.playPlayer()
-            default:
-                break
             }
             self.configureStates()
         }

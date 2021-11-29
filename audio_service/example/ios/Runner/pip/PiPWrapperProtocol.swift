@@ -9,6 +9,8 @@
 import AVFoundation
 
 protocol PiPWrapperProtocol {
+    var sendMessagePlay: EmptyBlock? { get set }
+    var sendMessagePause: EmptyBlock? { get set }
     func pictureInPictureControllerDidStopPictureInPicture()
     func pictureInPictureControllerWillStartPictureInPicture(player: AVPlayer?)
     func unsubscribeFromAllNotifications()
