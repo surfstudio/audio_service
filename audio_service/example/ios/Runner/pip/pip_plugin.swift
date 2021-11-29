@@ -105,7 +105,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     
     // Играет ли текущий плеер
     func isCurrentPlayerPlaying() -> Bool {
-        let isPlaying = SwiftFlutterPipPlugin.playerLayer?.player?.rate == 1.0
+        let isPlaying = SwiftFlutterPipPlugin.playerLayer?.player?.rate ?? .zero > .zero
         && SwiftFlutterPipPlugin.playerLayer?.player?.error == nil
         return isPlaying
     }

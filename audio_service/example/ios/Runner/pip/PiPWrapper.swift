@@ -110,11 +110,11 @@ private extension PiPWrapper {
     }
 
     func isPlaying() -> Bool {
-        return SwiftFlutterPipPlugin.playerLayer?.player?.rate == 1.0
+        return SwiftFlutterPipPlugin.playerLayer?.player?.rate ?? .zero > .zero
     }
 
     func resumePauseIfScreenLocked() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.delayBetweenScreenlockAndRateChange) { [weak self] in
             guard let self = self else { return }
             if self.screenLockState == .locked, self.isPaused(), self.playingPiP {
                 self.playPlayer()
