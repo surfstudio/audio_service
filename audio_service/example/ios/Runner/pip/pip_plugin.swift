@@ -201,7 +201,8 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
 
     private func getFLTPlayer(textureIDOpt: Int?) -> AVPlayer? {
         guard let textureID = textureIDOpt else { return nil }
-        let playerPluginOpt = (UIApplication.shared.delegate as! FlutterAppDelegate).valuePublished(byPlugin: "FLTVideoPlayerPlugin") as? FLTVideoPlayerPlugin
+        let flutterAppDelegate = UIApplication.shared.delegate as? FlutterAppDelegate
+        let playerPluginOpt = flutterAppDelegate?.valuePublished(byPlugin: "FLTVideoPlayerPlugin") as? FLTVideoPlayerPlugin
         let fltPlayer = playerPluginOpt?.players[textureID] as? FLTVideoPlayer
         SwiftFlutterPipPlugin.fltPlayer = fltPlayer
         return fltPlayer?.player
