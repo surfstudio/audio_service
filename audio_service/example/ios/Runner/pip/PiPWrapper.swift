@@ -11,7 +11,7 @@ import AVFoundation
 
 typealias EmptyBlock = () -> Void
 
-final class PiPWrapper: InterruptionNotificationServiceDelegate {
+final class PiPWrapper: PiPWrapperProtocol {
 
     // MARK: - ScreenLockState
 
@@ -46,7 +46,7 @@ final class PiPWrapper: InterruptionNotificationServiceDelegate {
     private let playerCenter: PlayerCenterProtocol = PlayerCenter()
     private var playingSessionOpen = false
 
-    // MARK: - Public Methods
+    // MARK: - PiPWrapperProtocol
 
     func pictureInPictureControllerDidStopPictureInPicture() {
         playerCenter.discardIsEnabledControllsState()
@@ -68,7 +68,11 @@ final class PiPWrapper: InterruptionNotificationServiceDelegate {
         interruptionNotificationService.subscribeOnAllnotifications()
     }
 
-    // MARK: - InterruptionNotificationServiceDelegate
+}
+
+// MARK: - InterruptionNotificationServiceDelegate
+
+extension PiPWrapper: InterruptionNotificationServiceDelegate {
 
     func interruptionEventDidTriggered(_ reason: InterruptionReasons) {
         switch reason {
@@ -88,9 +92,13 @@ final class PiPWrapper: InterruptionNotificationServiceDelegate {
         }
     }
 
-    // MARK: - Private Methods
+}
 
-    private func isPaused() -> Bool {
+// MARK: - Private Methods
+
+private extension PiPWrapper {
+
+    func isPaused() -> Bool {
         let player = SwiftFlutterPipPlugin.playerLayer?.player
         if #available(iOS 10.0, *), player?.timeControlStatus == .paused {
             return true
@@ -101,11 +109,11 @@ final class PiPWrapper: InterruptionNotificationServiceDelegate {
         return false
     }
 
-    private func isPlaying() -> Bool {
+    func isPlaying() -> Bool {
         return SwiftFlutterPipPlugin.playerLayer?.player?.rate == 1.0
     }
 
-    private func resumePauseIfScreenLocked() {
+    func resumePauseIfScreenLocked() {
         guard isPaused() else {
             configureStates()
             return
@@ -124,7 +132,7 @@ final class PiPWrapper: InterruptionNotificationServiceDelegate {
         }
     }
 
-    private func configureStates() {
+    func configureStates() {
         if isPaused(), !playingSessionOpen {
             setPauseState()
         }
@@ -133,7 +141,7 @@ final class PiPWrapper: InterruptionNotificationServiceDelegate {
         }
     }
 
-    private func configureActions() {
+    func configureActions() {
         playerCenter.onTogglePlayPause = { [weak self] in
             (self?.isPaused() ?? true) ? self?.playPlayer() : self?.pausePlayer()
         }
@@ -145,7 +153,7 @@ final class PiPWrapper: InterruptionNotificationServiceDelegate {
         }
     }
 
-    private func updatePlayingStateFLTVideoPlayer() {
+    func updatePlayingStateFLTVideoPlayer() {
         if playingPiP {
             sendMessagePlay?()
             playerCenter.updateTargets(state: .play)
@@ -156,12 +164,12 @@ final class PiPWrapper: InterruptionNotificationServiceDelegate {
     }
 
     /// Работают при нажатии на контролы в режиме PiP и при закрытии его
-    private func playPlayer() {
+    func playPlayer() {
         SwiftFlutterPipPlugin.playerLayer?.player?.play()
         setPlayingState()
     }
 
-    private func pausePlayer() {
+    func pausePlayer() {
         SwiftFlutterPipPlugin.playerLayer?.player?.pause()
         setPauseState()
     }
