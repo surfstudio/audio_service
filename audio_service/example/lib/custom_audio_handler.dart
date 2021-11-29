@@ -11,11 +11,11 @@ import 'package:relation/relation.dart';
 /// An [AudioHandler] for playing a single item.
 class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   static final _item = MediaItem(
-    id: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+    id: 'https://webref.ru/example/video/snowman.mp4',
     album: "Bee",
     title: "Bee",
     artist: "Bee",
-    duration: const Duration(milliseconds: 4000),
+    duration: const Duration(milliseconds: 63000),
     artUri: Uri.parse(
         'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
   );

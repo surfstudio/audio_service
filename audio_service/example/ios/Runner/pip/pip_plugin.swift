@@ -27,18 +27,6 @@ let isPipModeActiveArg = "isPipModeActiveArgument"
 public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     AVPictureInPictureControllerDelegate, UIApplicationDelegate {
 
-    // MARK: - Nested types
-
-    private enum Constants {
-        /// - Need for use legacy rate change notification, this trigger after lockscreen event
-        static let delayBetweenScreenlockAndRateChange: TimeInterval = 0.2
-    }
-
-    private enum ScreenLockState {
-        case locked
-        case unlocked
-    }
-
     // MARK: - Internal properties
 
     let channel: FlutterMethodChannel
@@ -52,17 +40,15 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     // MARK: - Private properties
 
     private var playingPiP: Bool = true
-    private static let interruptionNotificationService = InterruptionNotificationService()
-    private var screenLockState: ScreenLockState = .unlocked
-    private static let playerCenter: PlayerCenterProtocol = PlayerCenter()
-    private var playingSessionOpen = false
+    private let pipWrapper = PiPWrapper()
+    private var textureIDOpt: Int?
 
     // MARK: - Public initialization
     
     public init(_ newChannel: FlutterMethodChannel) {
         channel = newChannel
         super.init()
-        SwiftFlutterPipPlugin.interruptionNotificationService.delegate = self
+        configureActionsPiPWrapper()
     }
 
     // MARK: - Public methods
@@ -81,28 +67,6 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         } catch  {
             print("Audio session failed")
         }
-    }
-
-    public func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        SwiftFlutterPipPlugin.fltPlayer?.isPipActive = false
-        channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: false])
-        SwiftFlutterPipPlugin.playerCenter.discardIsEnabledControllsState()
-        updatePlayingStateFLTVideoPlayer()
-    }
-    
-    public func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        SwiftFlutterPipPlugin.fltPlayer?.isPipActive = true
-        channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: true])
-        SwiftFlutterPipPlugin.playerCenter.setupControlOnMediaCenter(isEnable: true)
-        configureActions()
-        SwiftFlutterPipPlugin
-            .interruptionNotificationService
-            .subscribeOnLegacyRateNotification(player: SwiftFlutterPipPlugin.playerLayer?.player)
-        updatePlayingStateFLTVideoPlayer()
-    }
-    
-    public func picture(_ pictureInPictureController: AVPictureInPictureController, restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void) {
-        completionHandler(true)
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -123,7 +87,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
             result(UIScreen.main.brightness == 0.0)
             break
         case removePlayerFromLayer:
-            clearPlayer()
+            clearPlayerNotify()
         case isCurrentPlayerPlayingMethod:
             result(isCurrentPlayerPlaying())
         default:
@@ -132,23 +96,18 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         }
     }
     
-    func clearPlayer() {
+    func clearPlayerNotify() {
         channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: false])
-        pausePlayer()
-        NotificationCenter.default.removeObserver(self)
-        SwiftFlutterPipPlugin.interruptionNotificationService.unsubscribeFromAllNotifications()
-        SwiftFlutterPipPlugin.pictureInPictureController = nil
-        SwiftFlutterPipPlugin.playerLayer?.removeFromSuperlayer()
-        SwiftFlutterPipPlugin.newPlayer = nil
-        SwiftFlutterPipPlugin.playerLayer = nil
+//        pausePlayer()
         SwiftFlutterPipPlugin.fltPlayer = nil
+        removePiPPlayer()
     }
     
     // Играет ли текущий плеер
     func isCurrentPlayerPlaying() -> Bool {
-        let playing = SwiftFlutterPipPlugin.newPlayer?.rate != 0 && SwiftFlutterPipPlugin.newPlayer?.error == nil
-        let pipModeIsActive = SwiftFlutterPipPlugin.fltPlayer?.isPipActive ?? false
-        return pipModeIsActive ? playingPiP : playing
+        let isPlaying = SwiftFlutterPipPlugin.playerLayer?.player?.rate == 1.0
+        && SwiftFlutterPipPlugin.playerLayer?.player?.error == nil
+        return isPlaying
     }
     
     
@@ -167,11 +126,17 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     
     // Разрешить/запретить автозапуск режима картинка в картинке
     func setAutoPipMode(_ call : FlutterMethodCall) {
-        let textureIDOpt = getTextureID(call)
+        let args = call.arguments as! NSDictionary
+        let params = args as! [String: Any]
+        let isAutoPipEnable = params[isAutoPipEnabledArg] as! Bool
+        SwiftFlutterPipPlugin.isAutoPip = isAutoPipEnable
+        textureIDOpt = params[textureIdArg] as? Int
         if SwiftFlutterPipPlugin.isAutoPip {
             enablePiPMode(textureIDOpt: textureIDOpt)
+            pipWrapper.pictureInPictureControllerWillStartPictureInPicture(player: SwiftFlutterPipPlugin.playerLayer?.player)
         } else {
-            disablePiPMode()
+            SwiftFlutterPipPlugin.fltPlayer = nil
+            removePiPPlayer()
         }
     }
     
@@ -181,7 +146,26 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
             pictureInPictureController?.startPictureInPicture()
         }
     }
+
+    // MARK: - AVPictureInPictureControllerDelegate
+
+    public func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+        SwiftFlutterPipPlugin.fltPlayer?.isPipActive = false
+        channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: false])
+        pipWrapper.pictureInPictureControllerDidStopPictureInPicture()
+    }
     
+    public func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+        SwiftFlutterPipPlugin.fltPlayer?.isPipActive = true
+        channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: true])
+    }
+    
+    public func picture(_ pictureInPictureController: AVPictureInPictureController, restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void) {
+        completionHandler(true)
+    }
+
+    // MARK: - UIApplicationDelegate
+
     public func applicationDidBecomeActive(_ application: UIApplication) {
         SwiftFlutterPipPlugin.fltPlayer?.isPipActive = false
         SwiftFlutterPipPlugin.playerLayer?.opacity = 0
@@ -200,45 +184,19 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     
     @objc
     private func didChangeScreenRecordingStatus(note : NSNotification) {
-        SwiftFlutterPipPlugin.fltPlayer?.isPipActive = false
         channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: false])
         SwiftFlutterPipPlugin.fltPlayer?.isPipActive = false
         SwiftFlutterPipPlugin.fltPlayer?.pause()
-        NotificationCenter.default.removeObserver(self)
-        SwiftFlutterPipPlugin.interruptionNotificationService.unsubscribeFromAllNotifications()
+        removePiPPlayer()
+    }
+
+    private func removePiPPlayer() {
         SwiftFlutterPipPlugin.playerLayer?.removeFromSuperlayer()
         SwiftFlutterPipPlugin.pictureInPictureController = nil
         SwiftFlutterPipPlugin.playerLayer = nil
         SwiftFlutterPipPlugin.newPlayer = nil
-    }
-
-    private func disablePiPMode() {
-        SwiftFlutterPipPlugin.playerLayer?.removeFromSuperlayer()
-        SwiftFlutterPipPlugin.pictureInPictureController = nil
-        SwiftFlutterPipPlugin.playerLayer = nil
-        SwiftFlutterPipPlugin.newPlayer = nil
-        SwiftFlutterPipPlugin.fltPlayer = nil
         NotificationCenter.default.removeObserver(self)
-        SwiftFlutterPipPlugin.interruptionNotificationService.unsubscribeFromAllNotifications()
-    }
-    private func isPaused() -> Bool {
-        let player = SwiftFlutterPipPlugin.playerLayer?.player
-        if #available(iOS 10.0, *), player?.timeControlStatus == .paused {
-            return true
-        }
-
-        if player?.rate == .zero, player?.status == .readyToPlay {
-            return true
-        }
-        return false
-    }
-
-    private func getTextureID(_ call : FlutterMethodCall) -> Int? {
-        let args = call.arguments as! NSDictionary
-        let params = args as! [String: Any]
-        let isAutoPipEnable = params[isAutoPipEnabledArg] as! Bool
-        SwiftFlutterPipPlugin.isAutoPip = isAutoPipEnable
-        return params[textureIdArg] as? Int
+        pipWrapper.unsubscribeFromAllNotifications()
     }
 
     private func getFLTPlayer(textureIDOpt: Int?) -> AVPlayer? {
@@ -253,8 +211,8 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         guard SwiftFlutterPipPlugin.playerLayer == nil else {
             return
         }
-        SwiftFlutterPipPlugin.interruptionNotificationService.subscribeOnAllnotifications()
-        if let player = getFLTPlayer(textureIDOpt: textureIDOpt), AVPictureInPictureController.isPictureInPictureSupported() {
+        pipWrapper.subscribeOnAllnotifications()
+        if let player = getFLTPlayer(textureIDOpt: textureIDOpt), isAvailable() {
             SwiftFlutterPipPlugin.fltPlayer?.isPipActive = SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPictureActive ?? false
             
             NotificationCenter.default.removeObserver(self)
@@ -279,110 +237,14 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         }
     }
 
-}
-
-// MARK: - PauseDetectServiceDelegate
-
-extension SwiftFlutterPipPlugin: InterruptionNotificationServiceDelegate {
-
-    func interruptionEventDidTriggered(_ reason: InterruptionReasons) {
-        switch reason {
-        case .rateDidChange:
-            /// - TODO: - Need check on available content if this ended and not repeatable
-            resumePauseIfScreenLocked()
-        case .screenDidLocked:
-            screenLockState = .locked
-            if let isPiPActive = SwiftFlutterPipPlugin.fltPlayer?.isPipActive,
-               !isPiPActive {
-                configureStates()
-            }
-        case .screenDidUnlocked:
-            screenLockState = .unlocked
-        case .system:
-            break
+    // Отправка сообщения play/pause из PiP 
+    func configureActionsPiPWrapper() {
+        pipWrapper.sendMessagePlay = { [weak self] in
+            self?.channel.invokeMethod(playPressed, arguments: [])
         }
-    }
-
-    private func resumePauseIfScreenLocked() {
-        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate == .zero else {
-            configureStates()
-            return
+        pipWrapper.sendMessagePause = { [weak self] in
+            self?.channel.invokeMethod(pausePressed, arguments: [])
         }
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + Constants.delayBetweenScreenlockAndRateChange) { [weak self] in
-            guard let self = self else {
-                return
-            }
-            switch self.screenLockState {
-            case .locked where self.playingPiP:
-                self.playPlayer()
-            case .unlocked:
-                break
-            default:
-                break
-            }
-            self.configureStates()
-        }
-    }
-
-    private func configureStates() {
-        confugurePausedState()
-        configurePlayingState()
-    }
-
-    private func confugurePausedState() {
-        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate == .zero, isPaused(), !playingSessionOpen else {
-            return
-        }
-        playingPiP = false
-        playingSessionOpen = true
-        updatePlayingStateFLTVideoPlayer()
-    }
-
-    private func configurePlayingState() {
-        guard SwiftFlutterPipPlugin.playerLayer?.player?.rate == 1.0, playingSessionOpen else {
-            return
-        }
-        playingPiP = true
-        playingSessionOpen = false
-        updatePlayingStateFLTVideoPlayer()
-    }
-
-    private func configureActions() {
-        SwiftFlutterPipPlugin.playerCenter.onTogglePlayPause = { [weak self] in
-            (self?.isPaused() ?? true) ? self?.playPlayer() : self?.pausePlayer()
-        }
-        SwiftFlutterPipPlugin.playerCenter.onPlay = { [weak self] in
-            self?.playPlayer()
-        }
-        SwiftFlutterPipPlugin.playerCenter.onPause = { [weak self] in
-            self?.pausePlayer()
-        }
-    }
-
-    private func updatePlayingStateFLTVideoPlayer() {
-//        guard let isPipActive = SwiftFlutterPipPlugin.fltPlayer?.isPipActive,
-//              isPipActive == true else { return }
-        if playingPiP {
-            channel.invokeMethod(playPressed, arguments: [])
-            SwiftFlutterPipPlugin.playerCenter.updateTargets(state: .play)
-        } else {
-            channel.invokeMethod(pausePressed, arguments: [])
-            SwiftFlutterPipPlugin.playerCenter.updateTargets(state: .pause)
-        }
-    }
-
-    private func playPlayer() {
-        SwiftFlutterPipPlugin.playerLayer?.player?.play()
-        playingPiP = true
-        playingSessionOpen = false
-        updatePlayingStateFLTVideoPlayer()
-    }
-
-    private func pausePlayer() {
-        SwiftFlutterPipPlugin.playerLayer?.player?.pause()
-        playingPiP = false
-        playingSessionOpen = true
-        updatePlayingStateFLTVideoPlayer()
     }
 
 }
