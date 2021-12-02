@@ -477,35 +477,7 @@ public class AudioServicePlugin implements FlutterPlugin, ActivityAware {
 
         @Override
         public void onLoadChildren(final String parentMediaId, final MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>> result, Bundle options) {
-            if (audioHandlerInterface != null) {
-                Map<String, Object> args = new HashMap<>();
-                args.put("parentMediaId", parentMediaId);
-                args.put("options", bundleToMap(options));
-                audioHandlerInterface.invokeMethod("getChildren", args, new MethodChannel.Result() {
-                    @Override
-                    public void error(String errorCode, String errorMessage, Object errorDetails) {
-                        result.sendError(new Bundle());
-                    }
-
-                    @Override
-                    public void notImplemented() {
-                        result.sendError(new Bundle());
-                    }
-
-                    @Override
-                    public void success(Object obj) {
-                        Map<?, ?> response = (Map<?, ?>)obj;
-                        @SuppressWarnings("unchecked") List<Map<?, ?>> rawMediaItems = (List<Map<?, ?>>)response.get("children");
-                        List<MediaBrowserCompat.MediaItem> mediaItems = new ArrayList<>();
-                        for (Map<?, ?> rawMediaItem : rawMediaItems) {
-                            MediaMetadataCompat mediaMetadata = createMediaMetadata(rawMediaItem);
-                            mediaItems.add(new MediaBrowserCompat.MediaItem(mediaMetadata.getDescription(), (Boolean)rawMediaItem.get("playable") ? MediaBrowserCompat.MediaItem.FLAG_PLAYABLE : MediaBrowserCompat.MediaItem.FLAG_BROWSABLE));
-                        }
-                        result.sendResult(mediaItems);
-                    }
-                });
-            }
-            result.detach();
+           // TODO: TEMPORARY FIXED BLACK SCREEN BUG, REMOVED HANDLING THIS METHOD 
         }
 
         @Override
