@@ -248,10 +248,9 @@ public class AudioServicePlugin implements FlutterPlugin, ActivityAware {
             audioHandlerInterface = new AudioHandlerInterface(flutterPluginBinding.getBinaryMessenger());
             AudioService.init(audioHandlerInterface);
         }
-        // TODO fixing black screen
-//        if (mediaBrowser == null) {
-//            connect();
-//        }
+        if (mediaBrowser == null) {
+            connect();
+        }
     }
 
     @Override
@@ -284,10 +283,9 @@ public class AudioServicePlugin implements FlutterPlugin, ActivityAware {
         clientInterface.setWrongEngineDetected(flutterPluginBinding.getBinaryMessenger() != sharedEngine.getDartExecutor());
         mainClientInterface = clientInterface;
         registerOnNewIntentListener();
-        // TODO fixing black screen
-//        if (mediaController != null) {
-//            MediaControllerCompat.setMediaController(mainClientInterface.activity, mediaController);
-//        }
+        if (mediaController != null) {
+            MediaControllerCompat.setMediaController(mainClientInterface.activity, mediaController);
+        }
         if (mediaBrowser == null) {
             connect();
         }
