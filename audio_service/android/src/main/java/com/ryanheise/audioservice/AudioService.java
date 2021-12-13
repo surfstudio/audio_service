@@ -279,7 +279,14 @@ public class AudioService extends MediaBrowserServiceCompat {
             }
         };
 
-        flutterEngine = AudioServicePlugin.getFlutterEngine(this);
+        // TODO(tharkahov): Комментирование этой строки чинит чёрный экран
+        //  на андроиде в приложении The Hole.
+        //  По сути прила застревает на SplashScreen.
+        //  Видимо потому, что если ранее был вызван этот метод из сервиса,
+        //  то при старте активити не вызывается onAttachedToEngine.
+        //  Воспроизводится не на все девайсах
+        //  Самые проблемные Samsung и OnePlus, а также LineageOs 17
+//        flutterEngine = AudioServicePlugin.getFlutterEngine(this);
         System.out.println("flutterEngine warmed up");
     }
 
