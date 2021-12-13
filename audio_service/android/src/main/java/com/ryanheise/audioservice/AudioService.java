@@ -12,6 +12,8 @@ import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
@@ -31,6 +33,7 @@ import androidx.media.VolumeProviderCompat;
 import androidx.media.app.NotificationCompat.MediaStyle;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -167,8 +170,6 @@ public class AudioService extends MediaBrowserServiceCompat {
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inJustDecodeBounds = true;
                 BitmapFactory.decodeFile(path, options);
-                int imageHeight = options.outHeight;
-                int imageWidth = options.outWidth;
                 options.inSampleSize = calculateInSampleSize(options, config.artDownscaleWidth, config.artDownscaleHeight);
                 options.inJustDecodeBounds = false;
 
@@ -206,7 +207,8 @@ public class AudioService extends MediaBrowserServiceCompat {
     private PowerManager.WakeLock wakeLock;
     private MediaSessionCompat mediaSession;
     private MediaSessionCallback mediaSessionCallback;
-    private List<NotificationCompat.Action> actions = new ArrayList<>();
+    private List<MediaControl> actions = new ArrayList<>();
+    private List<NotificationCompat.Action> nativeActions = new ArrayList<>();
     private int[] compactActionIndices;
     private MediaMetadataCompat mediaMetadata;
     private Bitmap artBitmap;
@@ -217,6 +219,8 @@ public class AudioService extends MediaBrowserServiceCompat {
     private int repeatMode;
     private int shuffleMode;
     private boolean notificationCreated;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private VolumeProviderCompat volumeProvider;
 
     public AudioProcessingState getProcessingState() {
         return processingState;
@@ -293,8 +297,10 @@ public class AudioService extends MediaBrowserServiceCompat {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        listener.onDestroy();
-        listener = null;
+        if (listener != null) {
+            listener.onDestroy();
+            listener = null;
+        }
         mediaMetadata = null;
         artBitmap = null;
         queue.clear();
@@ -312,6 +318,10 @@ public class AudioService extends MediaBrowserServiceCompat {
         releaseWakeLock();
         instance = null;
         notificationCreated = false;
+    }
+
+    public AudioServiceConfig getConfig() {
+        return config;
     }
 
     public void configure(AudioServiceConfig config) {
@@ -342,7 +352,7 @@ public class AudioService extends MediaBrowserServiceCompat {
         return getResources().getIdentifier(resourceName, resourceType, getApplicationContext().getPackageName());
     }
 
-    NotificationCompat.Action action(String resource, String label, long actionCode) {
+    NotificationCompat.Action createAction(String resource, String label, long actionCode) {
         int iconId = getResourceId(resource);
         return new NotificationCompat.Action(iconId, label,
                 buildMediaButtonPendingIntent(actionCode));
@@ -364,8 +374,19 @@ public class AudioService extends MediaBrowserServiceCompat {
         return PendingIntent.getBroadcast(this, 0, intent, 0);
     }
 
-    void setState(List<NotificationCompat.Action> actions, long actionBits, int[] compactActionIndices, AudioProcessingState processingState, boolean playing, long position, long bufferedPosition, float speed, long updateTime, Integer errorCode, String errorMessage, int repeatMode, int shuffleMode, boolean captioningEnabled, Long queueIndex) {
+    void setState(List<MediaControl> actions, long actionBits, int[] compactActionIndices, AudioProcessingState processingState, boolean playing, long position, long bufferedPosition, float speed, long updateTime, Integer errorCode, String errorMessage, int repeatMode, int shuffleMode, boolean captioningEnabled, Long queueIndex) {
+        boolean notificationChanged = false;
+        if (!Arrays.equals(compactActionIndices, this.compactActionIndices)) {
+            notificationChanged = true;
+        }
+        if (!actions.equals(this.actions)) {
+            notificationChanged = true;
+        }
         this.actions = actions;
+        this.nativeActions.clear();
+        for (MediaControl action : actions) {
+            nativeActions.add(createAction(action.icon, action.label, action.actionCode));
+        }
         this.compactActionIndices = compactActionIndices;
         boolean wasPlaying = this.playing;
         AudioProcessingState oldProcessingState = this.processingState;
@@ -398,12 +419,11 @@ public class AudioService extends MediaBrowserServiceCompat {
         if (oldProcessingState != AudioProcessingState.idle && processingState == AudioProcessingState.idle) {
             // TODO: Handle completed state as well?
             stop();
-        } else if (processingState != AudioProcessingState.idle && wasPlaying != playing) {
+        } else if (processingState != AudioProcessingState.idle && wasPlaying != playing && notificationChanged) {
             updateNotification();
         }
     }
 
-    private VolumeProviderCompat volumeProvider;
     public void setPlaybackInfo(int playbackType, Integer volumeControlType, Integer maxVolume, Integer volume) {
         if (playbackType == MediaControllerCompat.PlaybackInfo.PLAYBACK_TYPE_LOCAL) {
             // We have to wait 'til media2 before we can use AudioAttributes.
@@ -466,9 +486,10 @@ public class AudioService extends MediaBrowserServiceCompat {
         }
         if (config.androidNotificationClickStartsActivity)
             builder.setContentIntent(mediaSession.getController().getSessionActivity());
+        // TODO: Look at setColorized
         if (config.notificationColor != -1)
             builder.setColor(config.notificationColor);
-        for (NotificationCompat.Action action : actions) {
+        for (NotificationCompat.Action action : nativeActions) {
             builder.addAction(action);
         }
         final MediaStyle style = new MediaStyle()
@@ -487,19 +508,24 @@ public class AudioService extends MediaBrowserServiceCompat {
         return (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
     }
 
-    private NotificationCompat.Builder getNotificationBuilder() {
+    private /*synchronized*/ NotificationCompat.Builder getNotificationBuilder() {
+        // This local variable could be commented out and replaced by an
+        // instance variable if we want to reuse the builder instance. However,
+        // there doesn't turn out to be much benefit to this since we don't
+        // actually reuse any of the previous notification values when setting
+        // a new notification.
         NotificationCompat.Builder notificationBuilder = null;
         if (notificationBuilder == null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 createChannel();
-            int iconId = getResourceId(config.androidNotificationIcon);
             notificationBuilder = new NotificationCompat.Builder(this, notificationChannelId)
-                    .setSmallIcon(iconId)
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setShowWhen(false)
                     .setDeleteIntent(buildDeletePendingIntent())
             ;
         }
+        int iconId = getResourceId(config.androidNotificationIcon);
+        notificationBuilder.setSmallIcon(iconId);
         return notificationBuilder;
     }
 
@@ -600,15 +626,28 @@ public class AudioService extends MediaBrowserServiceCompat {
     /**
      * Updates metadata, loads the art and updates the notification.
      * Gets called from background thread.
+     *
+     * Also adds the loaded art bitmap to the MediaMetadata.
+     * This is needed to display art in lock screen in versions
+     * prior Android 11, in which this feature was removed.
+     *
+     * See:
+     *  - https://developer.android.com/guide/topics/media-apps/working-with-a-media-session#album_artwork
+     *  - https://9to5google.com/2020/08/02/android-11-lockscreen-art/
      */
-    synchronized void setMetadata(final MediaMetadataCompat mediaMetadata) {
-        this.mediaMetadata = mediaMetadata;
-        mediaSession.setMetadata(mediaMetadata);
+    synchronized void setMetadata(MediaMetadataCompat mediaMetadata) {
         String artCacheFilePath = mediaMetadata.getString("artCacheFile");
         if (artCacheFilePath != null) {
             artBitmap = loadArtBitmapFromFile(artCacheFilePath);
+            mediaMetadata = new MediaMetadataCompat.Builder(mediaMetadata)
+                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, artBitmap)
+                    .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, artBitmap)
+                    .build();
         }
-        updateNotification();
+        this.mediaMetadata = mediaMetadata;
+        mediaSession.setMetadata(mediaMetadata);
+        handler.removeCallbacksAndMessages(null);
+        handler.post(this::updateNotification);
     }
 
     @Override
@@ -774,24 +813,24 @@ public class AudioService extends MediaBrowserServiceCompat {
                     // These are the "genuine" media button click events
                 case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
                 case KeyEvent.KEYCODE_HEADSETHOOK:
-                    listener.onClick(mediaControl(event));
+                    listener.onClick(eventToButton(event));
                     break;
                 }
             }
             return true;
         }
 
-        private MediaControl mediaControl(KeyEvent event) {
+        private MediaButton eventToButton(KeyEvent event) {
             switch (event.getKeyCode()) {
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
             case KeyEvent.KEYCODE_HEADSETHOOK:
-                return MediaControl.media;
+                return MediaButton.media;
             case KeyEvent.KEYCODE_MEDIA_NEXT:
-                return MediaControl.next;
+                return MediaButton.next;
             case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
-                return MediaControl.previous;
+                return MediaButton.previous;
             default:
-                return MediaControl.media;
+                return MediaButton.media;
             }
         }
 
@@ -900,7 +939,7 @@ public class AudioService extends MediaBrowserServiceCompat {
         void onLoadChildren(String parentMediaId, Result<List<MediaBrowserCompat.MediaItem>> result, Bundle options);
         void onLoadItem(String itemId, Result<MediaBrowserCompat.MediaItem> result);
         void onSearch(String query, Bundle extras, Result<List<MediaBrowserCompat.MediaItem>> result);
-        void onClick(MediaControl mediaControl);
+        void onClick(MediaButton mediaButton);
         void onPrepare();
         void onPrepareFromMediaId(String mediaId, Bundle extras);
         void onPrepareFromSearch(String query, Bundle extras);

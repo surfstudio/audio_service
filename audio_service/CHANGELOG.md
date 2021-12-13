@@ -1,4 +1,21 @@
-## 0.18.0-beta.0
+## 0.18.2
+
+* Guard against NPE when Android service is destroyed quickly.
+* Migrate to flutter_lints.
+* Queue messages from platform if init() called late.
+* Fix deep linking on Android (@vishna/@ryanheise).
+
+## 0.18.1
+
+* Remove iOS notification on stop.
+* Fix setSpeed action on iOS.
+* Eliminate redundant notification updates on Android.
+* Handle null album and artist on web (@nt4f04uNd).
+* Fix multithreaded crash in notification tap (@nt4f04uNd).
+* Fix regression to show album art on lock screen (@nt4f04uNd).
+* Add playlist/shuffle/loop example.
+
+## 0.18.0
 
 * Use a single isolate for easier communication.
 * Replace BackgroundAudioTask by AudioHandler.
@@ -32,6 +49,8 @@
 * Code quality:
   * Unit tests (@suragch, @nt4f04uNd)
   * Strong-mode and pedantic lints, code consistency (@nt4f04uNd)
+* Improve artUri performance on Android (@nt4f04uNd)
+* Better detection of browser support (@nt4f04uNd)
 
 ## 0.17.1
 
