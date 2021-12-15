@@ -1,22 +1,27 @@
 // ignore_for_file: public_member_api_docs
 
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
+import 'package:audio_service_example/pip/pip_interactor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:video_player/video_player.dart';
+import 'package:relation/relation.dart';
 
 /// An [AudioHandler] for playing a single item.
 class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   static final _item = MediaItem(
-    id: 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+    id: 'https://webref.ru/example/video/snowman.mp4',
     album: "Bee",
     title: "Bee",
     artist: "Bee",
-    duration: const Duration(milliseconds: 4000),
+    duration: const Duration(milliseconds: 63000),
     artUri: Uri.parse(
         'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
   );
 
   bool _isStopped = false;
+  bool isTrylyPlaying = true;
 
   VideoPlayerController? _controller;
   final BehaviorSubject<VideoPlayerController?> _controllerSubject =
@@ -25,7 +30,21 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   ValueStream<VideoPlayerController?> get controllerStream =>
       _controllerSubject.stream;
 
-  VideoPlayerHandler() {
+  final PipInteractor pipInteractor;
+
+  VideoPlayerHandler(this.pipInteractor) {
+    pipInteractor.playAction.stream.listen((_) {
+      if (_controller != null) {
+        _controller!.play();
+      }
+    });
+
+    pipInteractor.pauseAction.stream.listen((_) {
+      if (_controller != null) {
+        _controller!.pause();
+      }
+    });
+
     _reinitController();
   }
 
@@ -84,7 +103,8 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> _broadcastState() async {
     final videoControllerValue = _controller?.value;
 
-    if (videoControllerValue?.isPlaying ?? false) _isStopped = false;
+    final isPlaying = await _playIsActive(videoControllerValue);
+    if (isPlaying) _isStopped = false;
     if (_isStopped) return;
 
     final AudioProcessingState processingState;
@@ -104,23 +124,29 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
       }
       processingState = AudioProcessingState.error;
     }
-
     final newState = PlaybackState(
       controls: [
         MediaControl.skipToPrevious,
-        if (videoControllerValue?.isPlaying ?? false)
-          MediaControl.pause
-        else
-          MediaControl.play,
+        if (isPlaying) MediaControl.pause else MediaControl.play,
         MediaControl.skipToNext,
         MediaControl.stop,
       ],
       bufferedPosition: Duration.zero,
       updatePosition: videoControllerValue?.position ?? Duration.zero,
-      playing: videoControllerValue?.isPlaying ?? false,
+      playing: isPlaying,
       processingState: processingState,
     );
 
     playbackState.add(newState);
+  }
+
+  /// Активен ли стэйт воспроизведения, возвращает bool
+  /// Условие снижает нагрузку на async запросы
+  Future<bool> _playIsActive(VideoPlayerValue? videoControllerValue) async {
+    if (pipInteractor.isPipModeLast) {
+      return await pipInteractor.isCurrentPlayerActive();
+    } else {
+      return videoControllerValue?.isPlaying ?? false;
+    }
   }
 }

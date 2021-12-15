@@ -17,8 +17,10 @@ late PipInteractor _pipInteractor;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  _pipInteractor = PipInteractor();
+
   _audioHandler = await AudioService.init(
-    builder: () => VideoPlayerHandler(),
+    builder: () => VideoPlayerHandler(_pipInteractor),
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.ryanheise.myapp.channel.audio',
       androidNotificationChannelName: 'Audio playback',
@@ -29,8 +31,6 @@ Future<void> main() async {
   AudioSession.instance.then((session) {
     session.configure(const AudioSessionConfiguration.music());
   });
-
-  _pipInteractor = PipInteractor();
 
   runApp(MyApp());
 }
@@ -69,6 +69,7 @@ class BumbleBeeRemoteVideo extends StatelessWidget {
             if (controller == null) return const Text('controller == null');
             return SizedBox(
               height: 100,
+              width: 200,
               child: AspectRatio(
                 aspectRatio: controller.value.aspectRatio,
                 child: VideoPlayer(controller),

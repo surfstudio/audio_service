@@ -5,11 +5,12 @@ import 'dart:io';
 
 import 'package:audio_service_example/pip/pip.dart';
 import 'package:rxdart/subjects.dart';
+import 'package:relation/relation.dart';
 
 /// Интерактор для работы с pip Плагином
 class PipInteractor {
-  // final playAction = VoidAction();
-  // final pauseAction = VoidAction();
+  final playAction = VoidAction();
+  final pauseAction = VoidAction();
   // final forwardAction = VoidAction();
   // final backAction = VoidAction();
 
@@ -41,11 +42,11 @@ class PipInteractor {
 
   PipInteractor() {
     _pipPlugin = PipPlugin(
-        // playAction,
-        // pauseAction,
-        // forwardAction,
-        // backAction,
-        );
+      playAction,
+      pauseAction,
+      // forwardAction,
+      // backAction,
+    );
     _pipModeSubscription = _pipPlugin.pipModeState.stream.distinct().listen(
       (isEnabled) {
         if (isPipModeActive.value != isEnabled) {
@@ -81,6 +82,7 @@ class PipInteractor {
   /// Для аналитики нужно посчитать процент просмотра от продолжительности всего видео [totalDuration].
   Future<void> setAutoPipModeEnable({
     required bool isEnabled,
+    bool isBackgroundActive = false,
     int? textureId,
   }) {
     if (isEnabled && Platform.isIOS && textureId == null) {
@@ -89,6 +91,7 @@ class PipInteractor {
 
     return _pipPlugin.setAutoPipModeEnable(
       isEnabled,
+      isBackgroundActive: isBackgroundActive,
       textureId: textureId,
     );
   }
