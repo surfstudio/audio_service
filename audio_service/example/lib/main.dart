@@ -54,7 +54,7 @@ class _BumbleBeeRemoteVideoState extends State<BumbleBeeRemoteVideo> {
     previousController?.pause();
 
     _controller = VideoPlayerController.network(
-      'https://webref.ru/example/video/snowman.mp4',
+      'https://0c6d038a-3309-416c-8331-7a5a3be3ce8b.selcdn.net/media/videos/57d64ee9-fe94-403c-b688-8c7841b392a3/master.m3u8',
       videoPlayerOptions: const VideoPlayerOptions(
         mixWithOthers: true,
         observeAppLifecycle: false,
