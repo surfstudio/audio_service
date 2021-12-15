@@ -24,6 +24,7 @@ const _isScreenLockedMethod = 'isScreenLocked';
 // только IOS
 const _prepareForCleanPlayerLayer = 'removePlayerFromLayer';
 const _isCurrentPlayerPlaying = 'isCurrentPlayerPlaying';
+const _isBackgroundActive = 'isBackgroundActive';
 
 const _play = 'play';
 const _pause = 'pause';
@@ -153,12 +154,14 @@ class PipPlugin {
   Future<void> setAutoPipModeEnable(
     // ignore: avoid_positional_boolean_parameters
     bool isEnable, {
+    bool isBackgroundActive = false,
     int? textureId,
   }) {
     return _channel.invokeMethod(
       _changeAutoPipModeState,
       {
         _isAutoPipEnabled: isEnable,
+        _isBackgroundActive: isBackgroundActive,
         _textureId: textureId,
       },
     );

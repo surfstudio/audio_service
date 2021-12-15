@@ -116,7 +116,7 @@ private extension PiPWrapper {
     func resumePauseIfScreenLocked() {
         DispatchQueue.main.asyncAfter(deadline: .now() + Constants.delayBetweenScreenlockAndRateChange) { [weak self] in
             guard let self = self else { return }
-            if self.screenLockState == .locked, self.isPaused(), self.playingPiP {
+            if self.screenLockState == .locked, self.isPaused(), self.playingPiP, SwiftFlutterPipPlugin.isBackgroundActive ?? false {
                 self.playPlayer()
             }
             self.configureStates()

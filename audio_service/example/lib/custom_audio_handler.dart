@@ -127,10 +127,7 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
     final newState = PlaybackState(
       controls: [
         MediaControl.skipToPrevious,
-        if (isPlaying)
-          MediaControl.pause
-        else
-          MediaControl.play,
+        if (isPlaying) MediaControl.pause else MediaControl.play,
         MediaControl.skipToNext,
         MediaControl.stop,
       ],
@@ -152,5 +149,4 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
       return videoControllerValue?.isPlaying ?? false;
     }
   }
-
 }

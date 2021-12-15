@@ -22,6 +22,7 @@ let pausePressed = "pause";
 // Аргументы
 let textureIdArg = "textureId"
 let isAutoPipEnabledArg = "isAutoPipEnabled"
+let isBackgroundActiveArg = "isBackgroundActive"
 let isPipModeActiveArg = "isPipModeActiveArgument"
 
 public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
@@ -36,6 +37,8 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     static var newPlayer: AVPlayer?
     static var playerLayer: AVPlayerLayer?
     static var pictureInPictureController: AVPictureInPictureController?
+    static var isBackgroundActive: Bool?
+
 
     // MARK: - Private properties
 
@@ -129,6 +132,8 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         let args = call.arguments as? NSDictionary
         let params = args as? [String: Any]
         let isAutoPipEnable = params?[isAutoPipEnabledArg] as? Bool
+
+        SwiftFlutterPipPlugin.isBackgroundActive = params?[isBackgroundActiveArg] as? Bool
         SwiftFlutterPipPlugin.isAutoPip = isAutoPipEnable ?? false
         textureIDOpt = params?[textureIdArg] as? Int
 

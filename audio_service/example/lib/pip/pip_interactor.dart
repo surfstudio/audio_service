@@ -42,11 +42,11 @@ class PipInteractor {
 
   PipInteractor() {
     _pipPlugin = PipPlugin(
-        playAction,
-        pauseAction,
-        // forwardAction,
-        // backAction,
-        );
+      playAction,
+      pauseAction,
+      // forwardAction,
+      // backAction,
+    );
     _pipModeSubscription = _pipPlugin.pipModeState.stream.distinct().listen(
       (isEnabled) {
         if (isPipModeActive.value != isEnabled) {
@@ -82,6 +82,7 @@ class PipInteractor {
   /// Для аналитики нужно посчитать процент просмотра от продолжительности всего видео [totalDuration].
   Future<void> setAutoPipModeEnable({
     required bool isEnabled,
+    bool isBackgroundActive = false,
     int? textureId,
   }) {
     if (isEnabled && Platform.isIOS && textureId == null) {
@@ -90,6 +91,7 @@ class PipInteractor {
 
     return _pipPlugin.setAutoPipModeEnable(
       isEnabled,
+      isBackgroundActive: isBackgroundActive,
       textureId: textureId,
     );
   }
