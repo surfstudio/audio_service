@@ -21,6 +21,8 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		AA424302276A0C4700B56535 /* PiPWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA424301276A0C4700B56535 /* PiPWrapper.swift */; };
+		AA424304276A0C5400B56535 /* PiPWrapperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA424303276A0C5400B56535 /* PiPWrapperProtocol.swift */; };
 		AAAE6617271DC6A00069A6F7 /* pip_plugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAE6616271DC6A00069A6F7 /* pip_plugin.swift */; };
 		B5E10CB2568B94C787D45C08 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B020DF22DBC3A7A9075A066A /* Pods_Runner.framework */; };
 /* End PBXBuildFile section */
@@ -62,6 +64,8 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AA424301276A0C4700B56535 /* PiPWrapper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PiPWrapper.swift; sourceTree = "<group>"; };
+		AA424303276A0C5400B56535 /* PiPWrapperProtocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PiPWrapperProtocol.swift; sourceTree = "<group>"; };
 		AAAE6616271DC6A00069A6F7 /* pip_plugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = pip_plugin.swift; sourceTree = "<group>"; };
 		B020DF22DBC3A7A9075A066A /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		CFD730A776164272EE879D74 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
@@ -167,8 +171,10 @@
 			isa = PBXGroup;
 			children = (
 				341854A42742639200B94EC7 /* PlayerCenter */,
-				AAAE6616271DC6A00069A6F7 /* pip_plugin.swift */,
 				34E5207127280B8600A68272 /* PauseDetectService */,
+				AA424303276A0C5400B56535 /* PiPWrapperProtocol.swift */,
+				AA424301276A0C4700B56535 /* PiPWrapper.swift */,
+				AAAE6616271DC6A00069A6F7 /* pip_plugin.swift */,
 			);
 			path = pip;
 			sourceTree = "<group>";
@@ -283,7 +289,7 @@
 				"${BUILT_PRODUCTS_DIR}/FMDB/FMDB.framework",
 				"${BUILT_PRODUCTS_DIR}/audio_service/audio_service.framework",
 				"${BUILT_PRODUCTS_DIR}/audio_session/audio_session.framework",
-				"${BUILT_PRODUCTS_DIR}/path_provider/path_provider.framework",
+				"${BUILT_PRODUCTS_DIR}/path_provider_ios/path_provider_ios.framework",
 				"${BUILT_PRODUCTS_DIR}/sqflite/sqflite.framework",
 				"${BUILT_PRODUCTS_DIR}/video_player/video_player.framework",
 			);
@@ -292,7 +298,7 @@
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FMDB.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/audio_service.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/audio_session.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/path_provider.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/path_provider_ios.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/sqflite.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/video_player.framework",
 			);
@@ -347,9 +353,11 @@
 				341854A6274263A100B94EC7 /* PlayerCenter.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
+				AA424304276A0C5400B56535 /* PiPWrapperProtocol.swift in Sources */,
 				34E5207727280BD900A68272 /* InterruptionNotificationServiceDelegate.swift in Sources */,
 				341854A82742640000B94EC7 /* ContentMetaData.swift in Sources */,
 				34E5207527280BC600A68272 /* InterruptionReasons.swift in Sources */,
+				AA424302276A0C4700B56535 /* PiPWrapper.swift in Sources */,
 				341854AA2742641800B94EC7 /* PlayerCenterProtocol.swift in Sources */,
 				34A103BE2745A655007E86B5 /* DeviceModel.swift in Sources */,
 				AAAE6617271DC6A00069A6F7 /* pip_plugin.swift in Sources */,
@@ -450,7 +458,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Flutter",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.ryanheise.audioServiceExample;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ryanheise.audioServiceExampless;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -587,7 +595,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Flutter",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.ryanheise.audioServiceExample;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ryanheise.audioServiceExampless;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -620,7 +628,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Flutter",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.ryanheise.audioServiceExample;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ryanheise.audioServiceExampless;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
