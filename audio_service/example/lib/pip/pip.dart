@@ -3,7 +3,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// Signature of callbacks that have no arguments and return no data.
@@ -19,7 +18,6 @@ const _changeAutoPipModeState = 'changeAutoPipModeState';
 const _pipModeStateChangedMethod = 'pipModeStateChanged';
 const _setActions = 'setActions';
 const _closePip = 'closePip';
-const _isScreenLockedMethod = 'isScreenLocked';
 
 // только IOS
 const _prepareForCleanPlayerLayer = 'removePlayerFromLayer';
@@ -84,9 +82,6 @@ class PipPlugin {
         FlutterPipButton.pause,
         FlutterPipButton.forward,
       ];
-
-  Future<bool> get isScreenLocked async =>
-      await _channel.invokeMethod<bool>(_isScreenLockedMethod) ?? false;
 
   PipPlugin(
     this.play,

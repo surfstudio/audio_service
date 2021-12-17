@@ -34,7 +34,11 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     static var isAutoPip = false
     
     static var fltPlayer: FLTVideoPlayer?
-    static var newPlayer: AVPlayer?
+    static var newPlayer: AVPlayer? {
+        didSet{
+            print("Set")
+        }
+    }
     static var playerLayer: AVPlayerLayer?
     static var pictureInPictureController: AVPictureInPictureController?
     static var isBackgroundActive: Bool?
@@ -78,16 +82,13 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
             result(isAvailable())
             break
         case startPipModeMethod:
-            SwiftFlutterPipPlugin.startPipMode(call)
+            startPipMode(call)
             break
         case changeAutoPipModeStateMethod:
             setAutoPipMode(call)
             break
         case closePipMethod:
             closePip()
-            break
-        case isScreenLockedMethod:
-            result(UIScreen.main.brightness == 0.0)
             break
         case removePlayerFromLayer:
             clearPlayerNotify()
@@ -148,10 +149,49 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     }
     
     // Запустить режим Picture in Picture
-    static func startPipMode(_ call : FlutterMethodCall) {
-        if(pictureInPictureController?.isPictureInPicturePossible ?? false && isAutoPip) {
-            pictureInPictureController?.startPictureInPicture()
+    public func startPipMode(_ call : FlutterMethodCall) {
+        if(SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPicturePossible ?? false && SwiftFlutterPipPlugin.isAutoPip) {
+            let args = call.arguments as? NSDictionary
+            let params = args as? [String: Any]
+            textureIDOpt = params?[textureIdArg] as? Int
+            
+//            SwiftFlutterPipPlugin.fltPlayer = nil
+//            removePiPPlayer()
+            enablePiPMode(textureIDOpt: textureIDOpt)
+           
+            
+//            if let player = getFLTPlayer(textureIDOpt: textureIDOpt), isAvailable() {
+//                SwiftFlutterPipPlugin.fltPlayer?.isPipActive = SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPictureActive ?? false
+                
+//                SwiftFlutterPipPlugin.newPlayer? = player
+//                SwiftFlutterPipPlugin.newPlayer?.actionAtItemEnd = .pause
+      
+
+
+            
+//            NotificationCenter.default.removeObserver(self)
+//
+//
+//            let playerLayer = makePlayerLayer(player: SwiftFlutterPipPlugin.newPlayer!)
+//                SwiftFlutterPipPlugin.pictureInPictureController = AVPictureInPictureController(playerLayer: playerLayer)
+//                SwiftFlutterPipPlugin.pictureInPictureController?.delegate = self
+//                SwiftFlutterPipPlugin.playerLayer = playerLayer
+//                }
+////            }
+//
+//        if #available(iOS 11.0, *) {
+//            NotificationCenter.default.addObserver(self,
+//                                                   selector: #selector(didChangeScreenRecordingStatus),
+//                                                   name: NSNotification.Name.UIScreenCapturedDidChange,
+//                                                   object: nil)
         }
+        if #available(iOS 14.0, *) {
+            SwiftFlutterPipPlugin.pictureInPictureController?.requiresLinearPlayback = true
+        }
+        // SwiftFlutterPipPlugin.pictureInPictureController?.stopPictureInPicture()
+        SwiftFlutterPipPlugin.pictureInPictureController?.startPictureInPicture()
+//        SwiftFlutterPipPlugin.fltPlayer?.play()
+        
     }
 
     // MARK: - AVPictureInPictureControllerDelegate
@@ -223,7 +263,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
             SwiftFlutterPipPlugin.fltPlayer?.isPipActive = SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPictureActive ?? false
             NotificationCenter.default.removeObserver(self)
             
-            SwiftFlutterPipPlugin.newPlayer? = player
+            SwiftFlutterPipPlugin.newPlayer = player
             SwiftFlutterPipPlugin.newPlayer?.actionAtItemEnd = .pause
             
             let playerLayer = makePlayerLayer(player: player)
