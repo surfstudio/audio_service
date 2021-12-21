@@ -138,7 +138,8 @@ class BumbleBeeRemoteVideo extends StatelessWidget {
         ),
         TextButton(
           onPressed: () {
-            _pipInteractor.setAutoPipModeEnable(isEnabled: false);
+            _pipInteractor.setAutoPipModeEnable(
+                isEnabled: false, isBackgroundActive: true);
           },
           child: const Text('setAutoPipModeEnable(false)'),
         ),

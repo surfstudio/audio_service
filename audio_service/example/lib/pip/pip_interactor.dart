@@ -17,9 +17,6 @@ class PipInteractor {
   /// Поток с информацией о состоянии Pip режима, чтобы перестраивать экран
   final isPipModeActive = BehaviorSubject.seeded(false);
 
-  /// Выключен ли сейчас экран или нет
-  final isScreenOffState = BehaviorSubject.seeded(false);
-
   late final PipPlugin _pipPlugin;
 
   /// Включен ли сейчас автоматический переход в пип
@@ -54,13 +51,6 @@ class PipInteractor {
         }
       },
     );
-
-    Timer.periodic(const Duration(seconds: 1), (_) async {
-      final isLocked = await _pipPlugin.isScreenLocked;
-      if (isScreenOffState.value != isLocked) {
-        isScreenOffState.add(isLocked);
-      }
-    });
   }
 
   /// Когда приложение в режиме картинка в картинке,

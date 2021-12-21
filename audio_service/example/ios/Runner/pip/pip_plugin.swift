@@ -78,16 +78,13 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
             result(isAvailable())
             break
         case startPipModeMethod:
-            SwiftFlutterPipPlugin.startPipMode(call)
+            swapVideoInActivePip(call)
             break
         case changeAutoPipModeStateMethod:
             setAutoPipMode(call)
             break
         case closePipMethod:
             closePip()
-            break
-        case isScreenLockedMethod:
-            result(UIScreen.main.brightness == 0.0)
             break
         case removePlayerFromLayer:
             clearPlayerNotify()
@@ -148,9 +145,36 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     }
     
     // Запустить режим Picture in Picture
-    static func startPipMode(_ call : FlutterMethodCall) {
-        if(pictureInPictureController?.isPictureInPicturePossible ?? false && isAutoPip) {
-            pictureInPictureController?.startPictureInPicture()
+    public func swapVideoInActivePip(_ call : FlutterMethodCall) {
+        if(SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPicturePossible ?? false && SwiftFlutterPipPlugin.isAutoPip) {
+            let args = call.arguments as? NSDictionary
+            let params = args as? [String: Any]
+            textureIDOpt = params?[textureIdArg] as? Int
+            
+
+            SwiftFlutterPipPlugin.fltPlayer = nil
+            if let player = getFLTPlayer(textureIDOpt: textureIDOpt), isAvailable() {
+                SwiftFlutterPipPlugin.fltPlayer?.isPipActive = SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPictureActive ?? false
+                NotificationCenter.default.removeObserver(self)
+                
+                SwiftFlutterPipPlugin.newPlayer = player
+                SwiftFlutterPipPlugin.newPlayer?.actionAtItemEnd = .pause
+                
+                SwiftFlutterPipPlugin.playerLayer?.player = player
+                player.play()
+
+            
+                if #available(iOS 11.0, *) {
+                    NotificationCenter.default.addObserver(self,
+                                                       selector: #selector(didChangeScreenRecordingStatus),
+                                                       name: NSNotification.Name.UIScreenCapturedDidChange,
+                                                       object: nil)
+                }
+                
+                if #available(iOS 14.0, *) {
+                    SwiftFlutterPipPlugin.pictureInPictureController?.requiresLinearPlayback = false
+                }
+            }
         }
     }
 
@@ -223,7 +247,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
             SwiftFlutterPipPlugin.fltPlayer?.isPipActive = SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPictureActive ?? false
             NotificationCenter.default.removeObserver(self)
             
-            SwiftFlutterPipPlugin.newPlayer? = player
+            SwiftFlutterPipPlugin.newPlayer = player
             SwiftFlutterPipPlugin.newPlayer?.actionAtItemEnd = .pause
             
             let playerLayer = makePlayerLayer(player: player)
@@ -236,6 +260,10 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
                                                        selector: #selector(didChangeScreenRecordingStatus),
                                                        name: NSNotification.Name.UIScreenCapturedDidChange,
                                                        object: nil)
+            }
+            
+            if #available(iOS 14.0, *) {
+                SwiftFlutterPipPlugin.pictureInPictureController?.requiresLinearPlayback = true
             }
         }
     }
