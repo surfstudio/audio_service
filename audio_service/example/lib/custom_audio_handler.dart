@@ -73,16 +73,14 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   }
 
   Future<void> _activatePipMode() async {
-    final isPlaying = await _playIsActive(_controller?.value);
     final currentTextureId = _controller?.textureId;
 
-    if (pipInteractor.isAvailableLast && isPlaying != _isPlayingCached) {
+    if (pipInteractor.isAvailableLast) {
       pipInteractor.setAutoPipModeEnable(
         isEnabled: true,
         isBackgroundActive: true,
         textureId: currentTextureId,
       );
-      _isPlayingCached = isPlaying;
     }
   }
 
