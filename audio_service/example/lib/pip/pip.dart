@@ -94,10 +94,6 @@ class PipPlugin {
           _pipModeStateChanged(((call.arguments as Map<Object?, Object?>)
               .cast<String, bool>())[_isPipModeActiveArgument]!);
           break;
-        case _currentRate:
-          _rateChanged(((call.arguments as Map<Object?, Object?>)
-              .cast<String, double>())[_rateArg]!);
-          break;
         case _play:
           play();
           break;
@@ -128,10 +124,8 @@ class PipPlugin {
 
   /// Доступен ли режим Picture in Picture на устройстве
   Future<bool> isPipAvailable() async {
-    final isAvailable =
-        await _channel.invokeMethod<bool>(_isAvailable) ?? false;
-    isAvailableLast = isAvailable;
-    return isAvailable;
+    // TODO(eremin): НЕ ЗАБУДЬ ДОДЕЛАТЬ!!!!!
+    return isAvailableLast;
   }
 
   /// Закрывает и очищает pip, только для IOS
@@ -184,10 +178,6 @@ class PipPlugin {
   void _pipModeStateChanged(bool isActive) {
     isPipModeLast = isActive;
     pipModeState.add(isActive);
-  }
-
-  void _rateChanged(double rate) {
-    rateState.add(rate);
   }
 }
 

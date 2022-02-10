@@ -19,8 +19,6 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
         'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
   );
 
-  bool? _isPlayingCached;
-
   VideoPlayerController? _controller;
   final BehaviorSubject<VideoPlayerController?> _controllerSubject =
       BehaviorSubject.seeded(null);

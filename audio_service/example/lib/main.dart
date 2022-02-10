@@ -111,12 +111,6 @@ class _BumbleBeeRemoteVideoState extends State<BumbleBeeRemoteVideo> {
               _audioHandler.controllerStream.value?.setPlaybackSpeed(rate),
         ),
         StreamBuilder(
-          stream: _pipInteractor.rateSubject.stream,
-          builder: (_, data) {
-            return Text("rate from channels: ${data.data}");
-          },
-        ),
-        StreamBuilder(
           stream: _audioHandler.rateSubject.stream,
           builder: (_, data) {
             return Text("rate from videoPlayer: ${data.data}");

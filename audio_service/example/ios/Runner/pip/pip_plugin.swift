@@ -86,9 +86,6 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method{
-        case isAvailableMethod:
-            result(isAvailable())
-            break
         case startPipModeMethod:
             swapVideoInActivePip(call)
             break
@@ -123,12 +120,6 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         let isPlaying = SwiftFlutterPipPlugin.playerLayer?.player?.rate ?? .zero > .zero
         && SwiftFlutterPipPlugin.playerLayer?.player?.error == nil
         return isPlaying
-    }
-    
-    
-    // Доступен ли режим Picture in Picture на устройстве
-    func isAvailable() -> Bool {
-        return AVPictureInPictureController.isPictureInPictureSupported()
     }
     
     // Прекратить режим картинка в картинке
@@ -279,20 +270,6 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
             
             if #available(iOS 14.0, *) {
                 SwiftFlutterPipPlugin.pictureInPictureController?.requiresLinearPlayback = true
-            }
-            
-            SwiftFlutterPipPlugin.newPlayer?.addObserver(self, forKeyPath: "rate", options: [.new], context: nil)
-
-        }
-    }
-        
-        public override func observeValue(forKeyPath keyPath: String?,
-                               of object: Any?,
-                               change: [NSKeyValueChangeKey : Any]?,
-                               context: UnsafeMutableRawPointer?) {
-        if keyPath == "rate", isUseLegacyMethodRateDetection {
-            if let rate = change?[.newKey] {
-             sendRate(rate: rate as! Double)
             }
         }
     }

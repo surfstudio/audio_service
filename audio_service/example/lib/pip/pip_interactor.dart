@@ -54,12 +54,6 @@ class PipInteractor {
         }
       },
     );
-
-    _rateSubscription = _pipPlugin.rateState.stream.distinct().listen(
-      (rate) {
-        rateSubject.add(rate);
-      },
-    );
   }
 
   /// Когда приложение в режиме картинка в картинке,
