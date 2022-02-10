@@ -159,7 +159,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
             
 
             SwiftFlutterPipPlugin.fltPlayer = nil
-            if let player = getFLTPlayer(textureIDOpt: textureIDOpt), isAvailable() {
+            if let player = getFLTPlayer(textureIDOpt: textureIDOpt) {
                 SwiftFlutterPipPlugin.fltPlayer?.isPipActive = SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPictureActive ?? false
                 NotificationCenter.default.removeObserver(self)
                 
@@ -249,7 +249,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         guard SwiftFlutterPipPlugin.playerLayer == nil else { return }
 
         pipWrapper.subscribeOnAllnotifications()
-        if let player = getFLTPlayer(textureIDOpt: textureIDOpt), isAvailable() {
+        if let player = getFLTPlayer(textureIDOpt: textureIDOpt) {
             SwiftFlutterPipPlugin.fltPlayer?.isPipActive = SwiftFlutterPipPlugin.pictureInPictureController?.isPictureInPictureActive ?? false
             NotificationCenter.default.removeObserver(self)
             
