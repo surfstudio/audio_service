@@ -97,7 +97,15 @@ public class AudioServicePlugin implements FlutterPlugin, ActivityAware {
         return flutterEngine;
     }
 
-    public static void disposeFlutterEngine() {
+    public static synchronized void disposeFlutterEngine() {
+        for (ClientInterface clientInterface : clientInterfaces) {
+            if (clientInterface.activity != null) {
+                // Don't destroy the engine if a new activity started and
+                // bound to the service in the time since the previous activity
+                // unbound from it.
+                return;
+            }
+        }
         FlutterEngine flutterEngine = FlutterEngineCache.getInstance().get(flutterEngineId);
         if (flutterEngine != null) {
             flutterEngine.destroy();
@@ -108,7 +116,6 @@ public class AudioServicePlugin implements FlutterPlugin, ActivityAware {
     private static final String CHANNEL_CLIENT = "com.ryanheise.audio_service.client.methods";
     private static final String CHANNEL_HANDLER = "com.ryanheise.audio_service.handler.methods";
 
-    private static Context applicationContext;
     private static final Set<ClientInterface> clientInterfaces = new HashSet<>();
     private static ClientInterface mainClientInterface;
     private static AudioHandlerInterface audioHandlerInterface;
@@ -181,6 +188,7 @@ public class AudioServicePlugin implements FlutterPlugin, ActivityAware {
     // INSTANCE FIELDS AND METHODS
     //
 
+    private Context applicationContext;
     private FlutterPluginBinding flutterPluginBinding;
     private ActivityPluginBinding activityPluginBinding;
     private NewIntentListener newIntentListener;
@@ -260,13 +268,15 @@ public class AudioServicePlugin implements FlutterPlugin, ActivityAware {
         }
         clientInterfaces.remove(clientInterface);
         clientInterface.setContext(null);
-        flutterPluginBinding = null;
         clientInterface = null;
         applicationContext = null;
-        if (audioHandlerInterface != null) {
+        if (audioHandlerInterface != null
+                && audioHandlerInterface.messenger == flutterPluginBinding.getBinaryMessenger()) {
+            System.out.println("### destroying audio handler interface");
             audioHandlerInterface.destroy();
             audioHandlerInterface = null;
         }
+        flutterPluginBinding = null;
     }
 
     //

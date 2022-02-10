@@ -1,3 +1,12 @@
+## 0.18.4
+
+* Fix Android FlutterJNI error after quick relaunch. 
+* Fix Android NPE when destroying additional FlutterEngines.
+
+## 0.18.3
+
+* Fix build when targeting Android 12.
+
 ## 0.18.2
 
 * Guard against NPE when Android service is destroyed quickly.
