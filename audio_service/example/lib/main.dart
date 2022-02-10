@@ -35,7 +35,12 @@ Future<void> main() async {
   runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -57,7 +62,14 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class BumbleBeeRemoteVideo extends StatelessWidget {
+class BumbleBeeRemoteVideo extends StatefulWidget {
+  @override
+  State<BumbleBeeRemoteVideo> createState() => _BumbleBeeRemoteVideoState();
+}
+
+class _BumbleBeeRemoteVideoState extends State<BumbleBeeRemoteVideo> {
+  double _currentRate = 0;
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -81,67 +93,34 @@ class BumbleBeeRemoteVideo extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             TextButton(
-              onPressed: () {
-                _audioHandler.play();
-              },
+              onPressed: () => _audioHandler.play(),
               child: const Text('play'),
             ),
             TextButton(
-              onPressed: () {
-                _audioHandler.pause();
-              },
+              onPressed: () => _audioHandler.pause(),
               child: const Text('pause'),
             ),
-            TextButton(
-              onPressed: () {
-                _audioHandler.stop();
-              },
-              child: const Text('stop'),
-            ),
           ],
         ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextButton(
-              onPressed: () async {
-                await AudioSession.instance.then((session) {
-                  session.setActive(true);
-                });
-              },
-              child: const Text('setActive(true)'),
-            ),
-            TextButton(
-              onPressed: () async {
-                await AudioSession.instance.then((session) {
-                  session.setActive(false);
-                });
-              },
-              child: const Text('setActive(false)'),
-            ),
-          ],
+        Slider(
+          min: 0,
+          max: 2,
+          value: _currentRate,
+          onChanged: (rate) => setState(() => _currentRate = rate),
+          onChangeEnd: (rate) =>
+              _audioHandler.controllerStream.value?.setPlaybackSpeed(rate),
         ),
-        TextButton(
-          onPressed: () {
-            _audioHandler.addEmptyState();
+        StreamBuilder(
+          stream: _pipInteractor.rateSubject.stream,
+          builder: (_, data) {
+            return Text("rate from channels: ${data.data}");
           },
-          child: const Text('add empty state to player'),
         ),
-        TextButton(
-          onPressed: () {
-            _pipInteractor.setAutoPipModeEnable(
-              isEnabled: true,
-              textureId: _audioHandler.controllerStream.value!.textureId,
-            );
+        StreamBuilder(
+          stream: _audioHandler.rateSubject.stream,
+          builder: (_, data) {
+            return Text("rate from videoPlayer: ${data.data}");
           },
-          child: const Text('setAutoPipModeEnable(true)'),
-        ),
-        TextButton(
-          onPressed: () {
-            _pipInteractor.setAutoPipModeEnable(
-                isEnabled: false, isBackgroundActive: true);
-          },
-          child: const Text('setAutoPipModeEnable(false)'),
         ),
       ],
     );

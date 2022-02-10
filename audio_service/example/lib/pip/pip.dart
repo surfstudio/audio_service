@@ -5,9 +5,6 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
-/// Signature of callbacks that have no arguments and return no data.
-// typedef VoidCallback = void Function();
-
 /// Название канала
 const _channelName = 'the.pip.pip';
 
@@ -23,6 +20,7 @@ const _closePip = 'closePip';
 const _prepareForCleanPlayerLayer = 'removePlayerFromLayer';
 const _isCurrentPlayerPlaying = 'isCurrentPlayerPlaying';
 const _isBackgroundActive = 'isBackgroundActive';
+const _currentRate = "currentRate";
 
 const _play = 'play';
 const _pause = 'pause';
@@ -34,6 +32,7 @@ const _textureId = 'textureId';
 const _isAutoPipEnabled = 'isAutoPipEnabled';
 const _isPipModeActiveArgument = 'isPipModeActiveArgument';
 const _actions = 'actions';
+const _rateArg = 'rateArg';
 
 /// Кнопки для отображения
 enum FlutterPipButton {
@@ -56,11 +55,11 @@ typedef VoidCallback = void Function();
 class PipPlugin {
   final VoidCallback play;
   final VoidCallback pause;
-  // final VoidCallback forward;
-  // final VoidCallback back;
 
   /// Поток с данными об изменении состояния картинка в картинке
   final pipModeState = StreamController<bool>.broadcast();
+
+  final rateState = StreamController<double>.broadcast();
 
   /// Канал для общения с нативной частью
   final MethodChannel _channel = const MethodChannel(_channelName);
@@ -86,8 +85,6 @@ class PipPlugin {
   PipPlugin(
     this.play,
     this.pause,
-    // this.forward,
-    // this.back,
   ) {
     isPipAvailable();
 
@@ -97,15 +94,13 @@ class PipPlugin {
           _pipModeStateChanged(((call.arguments as Map<Object?, Object?>)
               .cast<String, bool>())[_isPipModeActiveArgument]!);
           break;
+        case _currentRate:
+          _rateChanged(((call.arguments as Map<Object?, Object?>)
+              .cast<String, double>())[_rateArg]!);
+          break;
         case _play:
           play();
           break;
-        // case _forward:
-        //   forward();
-        //   break;
-        // case _back:
-        //   back();
-        //   break;
         case _pause:
           pause();
           break;
@@ -122,6 +117,7 @@ class PipPlugin {
 
   void dispose() {
     pipModeState.close();
+    rateState.close();
   }
 
   /// Активен ли текущий плеер, только для IOS
@@ -188,6 +184,10 @@ class PipPlugin {
   void _pipModeStateChanged(bool isActive) {
     isPipModeLast = isActive;
     pipModeState.add(isActive);
+  }
+
+  void _rateChanged(double rate) {
+    rateState.add(rate);
   }
 }
 

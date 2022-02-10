@@ -6,7 +6,6 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audio_service_example/pip/pip_interactor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:video_player/video_player.dart';
-import 'package:relation/relation.dart';
 
 /// An [AudioHandler] for playing a single item.
 class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
@@ -20,13 +19,13 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
         'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
   );
 
-  bool _isStopped = false;
-  bool _needToPlayNextVideo = false;
-  bool _isFirstPlaying = true;
+  bool? _isPlayingCached;
 
   VideoPlayerController? _controller;
   final BehaviorSubject<VideoPlayerController?> _controllerSubject =
       BehaviorSubject.seeded(null);
+
+  final BehaviorSubject<double> rateSubject = BehaviorSubject.seeded(0.0);
 
   ValueStream<VideoPlayerController?> get controllerStream =>
       _controllerSubject.stream;
@@ -46,24 +45,45 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
       }
     });
 
-    //  'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'
-    //   'https://webref.ru/example/video/snowman.mp4'
-    reinitController('https://samples.ffmpeg.org/MPEG-4/turn-on-off.mp4');
+    reinitController(
+        'https://0c6d038a-3309-416c-8331-7a5a3be3ce8b.selcdn.net/media/videos/57d64ee9-fe94-403c-b688-8c7841b392a3/master.m3u8');
   }
 
   @override
-  Future<void> play() => _controller!.play();
+  Future<void> play() async {
+    final controller = _controller;
+    if (controller != null) {
+      await controller.play();
+    }
+  }
 
   @override
-  Future<void> pause() => _controller!.pause();
+  Future<void> pause() async {
+    final controller = _controller;
+    if (controller != null) {
+      await controller.pause();
+    }
+  }
 
   @override
   Future<void> stop() async {
-    _isStopped = true;
     _controller?.pause();
-    // super.stop();
     addEmptyState();
     _controller?.removeListener(_broadcastState);
+  }
+
+  Future<void> _activatePipMode() async {
+    final isPlaying = await _playIsActive(_controller?.value);
+    final currentTextureId = _controller?.textureId;
+
+    if (pipInteractor.isAvailableLast && isPlaying != _isPlayingCached) {
+      pipInteractor.setAutoPipModeEnable(
+        isEnabled: true,
+        isBackgroundActive: true,
+        textureId: currentTextureId,
+      );
+      _isPlayingCached = isPlaying;
+    }
   }
 
   void addEmptyState() {
@@ -76,8 +96,6 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   }
 
   Future<void> reinitController(String id) async {
-    // pipInteractor.prepareForClean();
-
     final previousController = _controller;
     previousController?.removeListener(_broadcastState);
     previousController?.pause();
@@ -91,14 +109,15 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
     );
 
     _controllerSubject.add(_controller);
-    // _controller?.setLooping(true);
-    _controller?.initialize();
+    await _controller?.initialize();
     _controller?.addListener(_broadcastState);
-    _controller?.play();
+    await _controller?.play();
 
     playbackState.add(playbackState.value.copyWith(
       updatePosition: Duration.zero,
     ));
+
+    await _activatePipMode();
 
     // диспоуз закрывает пип
     Future<void>.delayed(
@@ -110,34 +129,12 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
   Future<void> _broadcastState() async {
     final videoControllerValue = _controller?.value;
 
-    if (videoControllerValue!.isInitialized) {
-      if (_isFirstPlaying) {
-        pipInteractor.setAutoPipModeEnable(
-          isEnabled: true,
-          isBackgroundActive: true,
-          textureId: _controller?.textureId,
-        );
-        _isFirstPlaying = false;
-      }
-
-      if (_needToPlayNextVideo && pipInteractor.isPipModeLast) {
-        pipInteractor.startPipMode(_controller!.textureId);
-
-        _needToPlayNextVideo = false;
-      }
-
-      if (videoControllerValue.duration.inSeconds ==
-          videoControllerValue.position.inSeconds) {
-        reinitController(
-            'https://0c6d038a-3309-416c-8331-7a5a3be3ce8b.selcdn.net/media/videos/57d64ee9-fe94-403c-b688-8c7841b392a3/master.m3u8');
-
-        _needToPlayNextVideo = true;
-      }
-    }
-
     final isPlaying = await _playIsActive(videoControllerValue);
-    if (isPlaying) _isStopped = false;
-    if (_isStopped) return;
+    if (!isPlaying) return;
+
+    if (videoControllerValue != null) {
+      rateSubject.add(videoControllerValue.playbackSpeed);
+    }
 
     final AudioProcessingState processingState;
     if (videoControllerValue == null) {
@@ -164,7 +161,7 @@ class VideoPlayerHandler extends BaseAudioHandler with QueueHandler {
         MediaControl.stop,
       ],
       bufferedPosition: Duration.zero,
-      updatePosition: videoControllerValue.position,
+      updatePosition: videoControllerValue?.position ?? Duration.zero,
       playing: isPlaying,
       processingState: processingState,
     );

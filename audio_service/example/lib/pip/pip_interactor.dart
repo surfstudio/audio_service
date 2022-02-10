@@ -17,6 +17,9 @@ class PipInteractor {
   /// Поток с информацией о состоянии Pip режима, чтобы перестраивать экран
   final isPipModeActive = BehaviorSubject.seeded(false);
 
+  /// Поток с информацией о состоянии rate c платформы
+  final rateSubject = BehaviorSubject.seeded(0.0);
+
   late final PipPlugin _pipPlugin;
 
   /// Включен ли сейчас автоматический переход в пип
@@ -35,7 +38,7 @@ class PipInteractor {
   List<FlutterPipButton> get playButtons => _pipPlugin.playButtons;
 
   StreamSubscription? _pipModeSubscription;
-  // bool _isAutoPipEnabled = false;
+  StreamSubscription? _rateSubscription;
 
   PipInteractor() {
     _pipPlugin = PipPlugin(
@@ -51,6 +54,12 @@ class PipInteractor {
         }
       },
     );
+
+    _rateSubscription = _pipPlugin.rateState.stream.distinct().listen(
+      (rate) {
+        rateSubject.add(rate);
+      },
+    );
   }
 
   /// Когда приложение в режиме картинка в картинке,
@@ -59,6 +68,7 @@ class PipInteractor {
 
   void dispose() {
     _pipModeSubscription?.cancel();
+    _rateSubscription?.cancel();
   }
 
   /// Активен ли текущий плеер, только для IOS

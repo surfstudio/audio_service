@@ -15,6 +15,7 @@ let closePipMethod = "closePip"
 let removePlayerFromLayer = "removePlayerFromLayer"
 let isCurrentPlayerPlayingMethod = "isCurrentPlayerPlaying"
 let isScreenLockedMethod = "isScreenLocked"
+let currentRateMethod = "currentRate";
 
 let playPressed = "play";
 let pausePressed = "pause";
@@ -24,6 +25,9 @@ let textureIdArg = "textureId"
 let isAutoPipEnabledArg = "isAutoPipEnabled"
 let isBackgroundActiveArg = "isBackgroundActive"
 let isPipModeActiveArg = "isPipModeActiveArgument"
+let rateArg = "rateArg"
+
+
 
 public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     AVPictureInPictureControllerDelegate, UIApplicationDelegate {
@@ -38,7 +42,15 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
     static var playerLayer: AVPlayerLayer?
     static var pictureInPictureController: AVPictureInPictureController?
     static var isBackgroundActive: Bool?
-
+    
+    private var isUseLegacyMethodRateDetection: Bool {
+        switch DeviceModel.detect() {
+        case .iPhone6S, .iPhone6SPlus, .iPhone7, .iPhone7_2, .iPhone7Plus, .iPhone7Plus_2, .iPhoneSE:
+            return true
+        default:
+            return false
+        }
+    }
 
     // MARK: - Private properties
 
@@ -96,9 +108,12 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         }
     }
     
+    func sendRate(rate:Double) -> Void{
+        channel.invokeMethod(currentRateMethod, arguments: [rateArg: rate])
+    }
+    
     func clearPlayerNotify() {
         channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: false])
-//        pausePlayer()
         SwiftFlutterPipPlugin.fltPlayer = nil
         removePiPPlayer()
     }
@@ -256,7 +271,7 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
             SwiftFlutterPipPlugin.playerLayer = playerLayer
             
             if #available(iOS 11.0, *) {
-                NotificationCenter.default.addObserver(self,
+                NotificationCenter.default.addObserver(self,    
                                                        selector: #selector(didChangeScreenRecordingStatus),
                                                        name: NSNotification.Name.UIScreenCapturedDidChange,
                                                        object: nil)
@@ -264,6 +279,20 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
             
             if #available(iOS 14.0, *) {
                 SwiftFlutterPipPlugin.pictureInPictureController?.requiresLinearPlayback = true
+            }
+            
+            SwiftFlutterPipPlugin.newPlayer?.addObserver(self, forKeyPath: "rate", options: [.new], context: nil)
+
+        }
+    }
+        
+        public override func observeValue(forKeyPath keyPath: String?,
+                               of object: Any?,
+                               change: [NSKeyValueChangeKey : Any]?,
+                               context: UnsafeMutableRawPointer?) {
+        if keyPath == "rate", isUseLegacyMethodRateDetection {
+            if let rate = change?[.newKey] {
+             sendRate(rate: rate as! Double)
             }
         }
     }
