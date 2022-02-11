@@ -105,10 +105,6 @@ public class SwiftFlutterPipPlugin: NSObject, FlutterPlugin,
         }
     }
     
-    func sendRate(rate:Double) -> Void{
-        channel.invokeMethod(currentRateMethod, arguments: [rateArg: rate])
-    }
-    
     func clearPlayerNotify() {
         channel.invokeMethod(pipModeStateChangedMethod, arguments: [isPipModeActiveArg: false])
         SwiftFlutterPipPlugin.fltPlayer = nil
