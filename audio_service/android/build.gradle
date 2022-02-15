@@ -9,7 +9,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.0.2'
+        classpath 'com.android.tools.build:gradle:4.1.0'
     }
 }
 
@@ -27,7 +27,7 @@ project.getTasks().withType(JavaCompile) {
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 30
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -43,5 +43,6 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.media:media:1.4.3'
+    implementation 'androidx.core:core:1.6.0'
+    implementation 'androidx.media:media:1.4.1'
 }
